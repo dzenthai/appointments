@@ -1,7 +1,7 @@
 package main
 
 import (
-	"appointments/internal/httpx"
+	"appointments/internal/jsonutil"
 	"appointments/internal/vcs"
 	"net/http"
 )
@@ -18,7 +18,7 @@ func (app *application) healthcheck(w http.ResponseWriter, r *http.Request) {
 		Env:     app.cfg.env,
 		Version: vcs.Version(),
 	}
-	err := httpx.WriteJSON(w, http.StatusOK, hc, nil)
+	err := jsonutil.WriteJSON(w, http.StatusOK, hc, nil)
 	if err != nil {
 		return
 	}
