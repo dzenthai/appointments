@@ -1,9 +1,25 @@
 package main
 
 import (
+	"appointments/internal/httpx"
+	"appointments/internal/vcs"
 	"net/http"
 )
 
+type Healthcheck struct {
+	Status  string `json:"status"`
+	Env     string `json:"env"`
+	Version string `json:"version"`
+}
+
 func (app *application) healthcheck(w http.ResponseWriter, r *http.Request) {
-	_, _ = w.Write([]byte("OK"))
+	hc := Healthcheck{
+		Status:  "OK",
+		Env:     app.cfg.env,
+		Version: vcs.Version(),
+	}
+	err := httpx.WriteJSON(w, http.StatusOK, hc, nil)
+	if err != nil {
+		return
+	}
 }

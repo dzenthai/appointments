@@ -1,11 +1,11 @@
-package main
+package env
 
 import (
 	"os"
 	"strconv"
 )
 
-func getStringEnv(key string, fallback string) string {
+func GetString(key string, fallback string) string {
 	env := os.Getenv(key)
 	if env == "" {
 		return fallback
@@ -13,7 +13,7 @@ func getStringEnv(key string, fallback string) string {
 	return env
 }
 
-func getIntEnv(key string, fallback int) int {
+func GetInt(key string, fallback int) int {
 	env := os.Getenv(key)
 	if env == "" {
 		return fallback
@@ -25,7 +25,7 @@ func getIntEnv(key string, fallback int) int {
 	return i
 }
 
-func getBoolEnv(key string, fallback bool) bool {
+func GetBool(key string, fallback bool) bool {
 	env := os.Getenv(key)
 	if env == "" {
 		return fallback

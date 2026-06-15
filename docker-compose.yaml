@@ -1,0 +1,10 @@
+services:
+  appointments-db:
+    container_name: appointments-db
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: dzenthai
+      POSTGRES_PASSWORD: pa55word
+      POSTGRES_DB: appointments
+    ports:
+      - '5432:5432'
