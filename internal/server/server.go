@@ -26,7 +26,7 @@ func New(cfg config.Config, logger *slog.Logger, db *sql.DB) *Server {
 func (s *Server) Serve() error {
 	srv := http.Server{
 		Addr:         fmt.Sprintf(":%d", s.cfg.Port),
-		Handler:      s.route(),
+		Handler:      s.routes(),
 		ErrorLog:     slog.NewLogLogger(s.logger.Handler(), slog.LevelError),
 		WriteTimeout: 30 * time.Second,
 		ReadTimeout:  10 * time.Second,

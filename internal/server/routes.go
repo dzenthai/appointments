@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-func (s *Server) route() http.Handler {
+func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /v1/healthcheck", s.healthcheck)

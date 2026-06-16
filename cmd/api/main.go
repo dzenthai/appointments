@@ -2,8 +2,8 @@ package main
 
 import (
 	"appointments/internal/config"
+	"appointments/internal/database"
 	"appointments/internal/server"
-	"appointments/internal/storage"
 	"database/sql"
 	"fmt"
 	"log/slog"
@@ -23,7 +23,7 @@ func run() error {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	db, err := storage.OpenDB(cfg.DB)
+	db, err := database.Open(cfg.DB)
 	if err != nil {
 		return err
 	}

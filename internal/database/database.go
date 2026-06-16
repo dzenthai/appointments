@@ -1,4 +1,4 @@
-package storage
+package database
 
 import (
 	"appointments/internal/config"
@@ -9,7 +9,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-func OpenDB(dbCfg config.DB) (*sql.DB, error) {
+func Open(dbCfg config.DB) (*sql.DB, error) {
 	db, err := sql.Open("pgx", dbCfg.DSN)
 	if err != nil {
 		return nil, err

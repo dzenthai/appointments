@@ -32,7 +32,7 @@ func WriteJSON(w http.ResponseWriter, status int, data any, headers http.Header)
 	return nil
 }
 
-func ReadIDParams(r *http.Request) (int64, error) {
+func ReadIDParam(r *http.Request) (int64, error) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil || id < 1 {
 		return 0, errors.New("invalid id parameter")
@@ -42,6 +42,9 @@ func ReadIDParams(r *http.Request) (int64, error) {
 }
 
 func ReadJSON(w http.ResponseWriter, r *http.Request, dst any) error {
+	maxBytes := 1_048_576
+	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
+
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 
