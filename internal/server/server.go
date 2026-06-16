@@ -6,28 +6,34 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
+	"time"
 )
 
 type Server struct {
-	Cfg    config.Config
-	Logger *slog.Logger
-	DB     *sql.DB
+	cfg    config.Config
+	logger *slog.Logger
+	db     *sql.DB
+}
+
+func New(cfg config.Config, logger *slog.Logger, db *sql.DB) *Server {
+	return &Server{
+		cfg:    cfg,
+		logger: logger,
+		db:     db,
+	}
 }
 
 func (s *Server) Serve() error {
 	srv := http.Server{
-		Addr:              fmt.Sprintf(":%d", s.Cfg.Port),
-		Handler:           s.route(),
-		ReadTimeout:       0,
-		ReadHeaderTimeout: 0,
-		WriteTimeout:      0,
-		IdleTimeout:       0,
-		MaxHeaderBytes:    0,
-		ErrorLog:          slog.NewLogLogger(slog.NewTextHandler(os.Stdout, nil), slog.LevelError),
+		Addr:         fmt.Sprintf(":%d", s.cfg.Port),
+		Handler:      s.route(),
+		ErrorLog:     slog.NewLogLogger(s.logger.Handler(), slog.LevelError),
+		WriteTimeout: 30 * time.Second,
+		ReadTimeout:  10 * time.Second,
+		IdleTimeout:  time.Minute,
 	}
 
-	s.Logger.Info("starting server", "port", s.Cfg.Port, "env", s.Cfg.Env)
+	s.logger.Info("starting server", "port", s.cfg.Port, "env", s.cfg.Env)
 
 	return srv.ListenAndServe()
 }

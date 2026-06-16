@@ -12,10 +12,12 @@ func Version() string {
 	if ok {
 		for _, s := range bi.Settings {
 			switch s.Key {
-			case "revision":
+			case "vcs.revision":
 				revision = s.Value
-			case "modified":
-				modified = true
+			case "vcs.modified":
+				if s.Value == "true" {
+					modified = true
+				}
 			}
 		}
 		if modified {

@@ -15,7 +15,7 @@ type Healthcheck struct {
 func (s *Server) healthcheck(w http.ResponseWriter, r *http.Request) {
 	hc := Healthcheck{
 		Status:  "OK",
-		Env:     s.Cfg.Env,
+		Env:     s.cfg.Env,
 		Version: vcs.Version(),
 	}
 	err := jsonutil.WriteJSON(w, http.StatusOK, hc, nil)

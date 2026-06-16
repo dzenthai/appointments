@@ -19,11 +19,11 @@ func main() {
 
 func run() error {
 
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-
 	cfg := config.Load()
 
-	db, err := storage.OpenDB(cfg.DBCfg)
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	db, err := storage.OpenDB(cfg.DB)
 	if err != nil {
 		return err
 	}
@@ -31,16 +31,7 @@ func run() error {
 		_ = db.Close()
 	}(db)
 
-	srv := server.Server{
-		Cfg:    cfg,
-		Logger: logger,
-		DB:     db,
-	}
+	srv := server.New(cfg, logger, db)
 
-	err = srv.Serve()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return srv.Serve()
 }
