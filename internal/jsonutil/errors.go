@@ -5,33 +5,25 @@ import (
 	"net/http"
 )
 
-func errorResponse(w http.ResponseWriter, r *http.Request, status int, message any, logger *slog.Logger) {
+func errorResponse(w http.ResponseWriter, status int, message any) {
 	ed := map[string]any{
 		"error": message,
 	}
 
-	err := WriteJSON(w, status, ed, nil)
-	if err != nil {
-		logError(r, err, logger)
-		return
-	}
+	_ = WriteJSON(w, status, ed, nil)
 }
 
-func logError(r *http.Request, err error, logger *slog.Logger) {
+func ServerErrorResponse(w http.ResponseWriter, r *http.Request, err error, logger *slog.Logger) {
 	logger.Error("error occurs", "err", err, "method", r.Method, "uri", r.RequestURI)
-}
-
-func serverErrorResponse(w http.ResponseWriter, r *http.Request, err error, logger *slog.Logger) {
-	logError(r, err, logger)
 	message := "the server encountered a problem and could not process your request"
-	errorResponse(w, r, http.StatusInternalServerError, message, logger)
+	errorResponse(w, http.StatusInternalServerError, message)
 }
 
-func notFoundResponse(w http.ResponseWriter, r *http.Request, logger *slog.Logger) {
+func NotFoundResponse(w http.ResponseWriter) {
 	message := "the requested resource could not be found"
-	errorResponse(w, r, http.StatusNotFound, message, logger)
+	errorResponse(w, http.StatusNotFound, message)
 }
 
-func badRequestResponse(w http.ResponseWriter, r *http.Request, err error, logger *slog.Logger) {
-	errorResponse(w, r, http.StatusBadRequest, err.Error(), logger)
+func BadRequestResponse(w http.ResponseWriter, err error) {
+	errorResponse(w, http.StatusBadRequest, err.Error())
 }
