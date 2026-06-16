@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"appointments/internal/jsonutil"
@@ -12,10 +12,10 @@ type Healthcheck struct {
 	Version string `json:"version"`
 }
 
-func (app *application) healthcheck(w http.ResponseWriter, r *http.Request) {
+func (s *Server) healthcheck(w http.ResponseWriter, r *http.Request) {
 	hc := Healthcheck{
 		Status:  "OK",
-		Env:     app.cfg.env,
+		Env:     s.Cfg.Env,
 		Version: vcs.Version(),
 	}
 	err := jsonutil.WriteJSON(w, http.StatusOK, hc, nil)

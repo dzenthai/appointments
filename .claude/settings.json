@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Read(///wsl.localhost/archlinux/home/dzenthai/dev/projects/**)",
-      "Bash(find //wsl.localhost/archlinux/home/dzenthai/dev/projects/go/greenlight/cmd/api -name \"*.go\" | sort)",
-      "Read(///wsl.localhost/archlinux/home/dzenthai/dev/projects/go/greenlight/cmd/**)"
-    ]
-  }
-}
