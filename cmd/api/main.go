@@ -2,7 +2,7 @@ package main
 
 import (
 	"appointments/internal/config"
-	"appointments/internal/database"
+	"appointments/internal/postgres"
 	"appointments/internal/server"
 	"database/sql"
 	"fmt"
@@ -23,7 +23,7 @@ func run() error {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	db, err := database.Open(cfg.DB)
+	db, err := postgres.Open(cfg.DB)
 	if err != nil {
 		return err
 	}
