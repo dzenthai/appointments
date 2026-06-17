@@ -4,6 +4,8 @@ import (
 	"appointments/internal/config"
 	"appointments/internal/postgres"
 	"appointments/internal/server"
+	"appointments/internal/store"
+	"appointments/internal/user"
 	"database/sql"
 	"fmt"
 	"log/slog"
@@ -12,7 +14,7 @@ import (
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 }
@@ -31,7 +33,10 @@ func run() error {
 		_ = db.Close()
 	}(db)
 
-	srv := server.New(cfg, logger, db)
+	s := store.New(db)
+	userHandler := user.NewHandler(s.User, logger)
+
+	srv := server.New(cfg, logger, db, userHandler)
 
 	return srv.Serve()
 }

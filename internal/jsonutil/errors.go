@@ -27,3 +27,7 @@ func NotFoundResponse(w http.ResponseWriter) {
 func BadRequestResponse(w http.ResponseWriter, err error) {
 	errorResponse(w, http.StatusBadRequest, err.Error())
 }
+
+func FailedValidationResponse(w http.ResponseWriter, errors map[string]string) {
+	errorResponse(w, http.StatusBadRequest, errors)
+}
