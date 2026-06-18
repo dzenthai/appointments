@@ -2,6 +2,7 @@ package main
 
 import (
 	"appointments/internal/config"
+	"appointments/internal/mailer"
 	"appointments/internal/postgres"
 	"appointments/internal/server"
 	"appointments/internal/store"
@@ -33,8 +34,10 @@ func run() error {
 		_ = db.Close()
 	}(db)
 
+	m := mailer.New(cfg.Resend.APIKey, cfg.Resend.Sender)
+
 	s := store.New(db)
-	userHandler := user.NewHandler(s.User, logger)
+	userHandler := user.NewHandler(s.User, logger, m)
 
 	srv := server.New(cfg, logger, userHandler)
 

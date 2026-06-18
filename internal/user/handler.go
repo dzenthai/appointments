@@ -2,6 +2,7 @@ package user
 
 import (
 	"appointments/internal/jsonutil"
+	"appointments/internal/mailer"
 	"appointments/internal/validator"
 	"errors"
 	"log/slog"
@@ -11,12 +12,14 @@ import (
 type Handler struct {
 	store  *Store
 	logger *slog.Logger
+	mailer *mailer.Mailer
 }
 
-func NewHandler(store *Store, logger *slog.Logger) *Handler {
+func NewHandler(store *Store, logger *slog.Logger, mailer *mailer.Mailer) *Handler {
 	return &Handler{
 		store:  store,
 		logger: logger,
+		mailer: mailer,
 	}
 }
 
@@ -54,18 +57,18 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = h.store.Insert(&user)
-	if err != nil {
-		switch {
-		case errors.Is(err, ErrDuplicateEmail):
-			v.AddError("email", "a user with this email address already exists")
-			jsonutil.FailedValidationResponse(w, v.Errors)
-		default:
-			jsonutil.ServerErrorResponse(w, r, err, h.logger)
-		}
+	if err != nil && !errors.Is(err, ErrDuplicateEmail) {
+		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 		return
 	}
 
-	err = jsonutil.WriteJSON(w, http.StatusAccepted, user, nil)
+	err = h.mailer.SendVerification(user.FirstName, user.SecondName, user.Email, "blank", h.logger)
+	if err != nil {
+		jsonutil.ServerErrorResponse(w, r, err, h.logger)
+		return
+	}
+
+	err = jsonutil.WriteJSON(w, http.StatusAccepted, jsonutil.Envelope{"message": "check your email to complete registration"}, nil)
 	if err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 	}

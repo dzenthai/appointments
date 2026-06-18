@@ -8,7 +8,8 @@ import (
 type Config struct {
 	Port int
 	Env  string
-	DB   DB
+	DB
+	Resend
 }
 
 type DB struct {
@@ -16,6 +17,11 @@ type DB struct {
 	MaxOpenConns int
 	MaxIdleConns int
 	MaxIdleTime  string
+}
+
+type Resend struct {
+	APIKey string
+	Sender string
 }
 
 func Load() Config {
@@ -26,6 +32,8 @@ func Load() Config {
 	flag.IntVar(&cfg.DB.MaxOpenConns, "max-open-conns", env.GetInt("MAX_OPEN_CONNS", 25), "postgres max open connections")
 	flag.IntVar(&cfg.DB.MaxIdleConns, "max-idle-conns", env.GetInt("MAX_IDLE_CONNS", 25), "postgres max idle connections")
 	flag.StringVar(&cfg.DB.MaxIdleTime, "max-idle-time", env.GetString("MAX_IDLE_TIME", "15m"), "postgres max idle time")
+	flag.StringVar(&cfg.Resend.APIKey, "resend-api-key", env.GetString("RESEND_API_KEY", "-"), "resend api key")
+	flag.StringVar(&cfg.Resend.Sender, "resend-sender", env.GetString("RESEND_SENDER", "-"), "resend sender")
 	flag.Parse()
 
 	return cfg
