@@ -62,7 +62,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.mailer.SendVerification(user.FirstName, user.SecondName, user.Email, "blank", h.logger)
+	err = h.mailer.SendVerification(user.Email, "blank", h.logger)
 	if err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 		return
