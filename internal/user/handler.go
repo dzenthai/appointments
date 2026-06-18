@@ -20,7 +20,7 @@ func NewHandler(store *Store, logger *slog.Logger) *Handler {
 	}
 }
 
-func (h *Handler) RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		FirstName         string `json:"first_name"`
 		SecondName        string `json:"second_name"`

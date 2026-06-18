@@ -40,7 +40,7 @@ func (p *password) Set(plaintext string) error {
 	p.hash = hash
 	p.plaintext = &plaintext
 
-	return err
+	return nil
 }
 
 func (p *password) Matches(plaintext string) (bool, error) {
@@ -107,15 +107,11 @@ func (s *Store) Insert(user *User) error {
 
 	err := s.db.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.Activated, &user.CreatedAt, &user.Version)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		switch {
-		case errors.As(err, &pgErr):
-			if pgErr.Code == "23505" {
-				return ErrDuplicateEmail
-			}
-		default:
-			return err
+		pgErr, exist := errors.AsType[*pgconn.PgError](err)
+		if exist && pgErr.Code == "23505" {
+			return ErrDuplicateEmail
 		}
+		return err
 	}
 	return nil
 }

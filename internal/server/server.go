@@ -3,7 +3,6 @@ package server
 import (
 	"appointments/internal/config"
 	"appointments/internal/user"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -13,15 +12,13 @@ import (
 type Server struct {
 	cfg    config.Config
 	logger *slog.Logger
-	db     *sql.DB
 	users  *user.Handler
 }
 
-func New(cfg config.Config, logger *slog.Logger, db *sql.DB, users *user.Handler) *Server {
+func New(cfg config.Config, logger *slog.Logger, users *user.Handler) *Server {
 	return &Server{
 		cfg:    cfg,
 		logger: logger,
-		db:     db,
 		users:  users,
 	}
 }

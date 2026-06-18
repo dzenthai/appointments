@@ -20,6 +20,9 @@ func Version() string {
 				}
 			}
 		}
+		if revision == "" {
+			return "dev mode"
+		}
 		if modified {
 			return fmt.Sprintf("%s-dirty", revision)
 		}

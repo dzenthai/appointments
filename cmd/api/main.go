@@ -36,7 +36,7 @@ func run() error {
 	s := store.New(db)
 	userHandler := user.NewHandler(s.User, logger)
 
-	srv := server.New(cfg, logger, db, userHandler)
+	srv := server.New(cfg, logger, userHandler)
 
 	return srv.Serve()
 }
