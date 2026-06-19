@@ -72,6 +72,10 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 				jsonutil.ServerErrorResponse(w, r, err, h.logger)
 				return
 			}
+			if existing.Verified {
+				// todo verified email response
+				return
+			}
 			user = *existing
 		default:
 			jsonutil.ServerErrorResponse(w, r, err, h.logger)
@@ -79,20 +83,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	vry, err := verification.NewCode(user.ID, h.codeTTL)
-	if err != nil {
-		jsonutil.ServerErrorResponse(w, r, err, h.logger)
-		return
-	}
-
-	err = h.verifications.Create(vry)
-	if err != nil {
-		jsonutil.ServerErrorResponse(w, r, err, h.logger)
-		return
-	}
-
-	err = h.mailer.SendVerification(user.Email, vry.Code.Plaintext(), h.logger)
-	if err != nil {
+	if err = h.sendVerificationCode(user); err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 		return
 	}
@@ -101,6 +92,21 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 	}
+}
+
+func (h *Handler) sendVerificationCode(user User) error {
+	vry, err := verification.NewCode(user.ID, h.codeTTL)
+	if err != nil {
+		return err
+	}
+
+	err = h.verifications.Create(vry)
+	if err != nil {
+		return err
+	}
+
+	// todo goroutine
+	return h.mailer.SendVerification(user.Email, vry.Code.Plaintext(), h.logger)
 }
 
 func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
