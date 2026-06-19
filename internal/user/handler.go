@@ -12,20 +12,20 @@ import (
 )
 
 type Handler struct {
-	store         *Store
-	verifications *verification.Store
-	logger        *slog.Logger
-	mailer        *mailer.Mailer
-	codeTTL       time.Duration
+	store        *Store
+	verification *verification.Store
+	logger       *slog.Logger
+	mailer       *mailer.Mailer
+	codeTTL      time.Duration
 }
 
 func NewHandler(store *Store, verifications *verification.Store, logger *slog.Logger, mailer *mailer.Mailer, codeTTL time.Duration) *Handler {
 	return &Handler{
-		store:         store,
-		verifications: verifications,
-		logger:        logger,
-		mailer:        mailer,
-		codeTTL:       codeTTL,
+		store:        store,
+		verification: verifications,
+		logger:       logger,
+		mailer:       mailer,
+		codeTTL:      codeTTL,
 	}
 }
 
@@ -73,7 +73,10 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if existing.Verified {
-				// todo verified email response
+				err = jsonutil.WriteJSON(w, http.StatusAccepted, jsonutil.Envelope{"message": "check your email to complete registration"}, nil)
+				if err != nil {
+					jsonutil.ServerErrorResponse(w, r, err, h.logger)
+				}
 				return
 			}
 			user = *existing
@@ -100,13 +103,13 @@ func (h *Handler) sendVerificationCode(user User) error {
 		return err
 	}
 
-	err = h.verifications.Create(vry)
+	err = h.verification.Create(vry)
 	if err != nil {
 		return err
 	}
 
 	// todo goroutine
-	return h.mailer.SendVerification(user.Email, vry.Code.Plaintext(), h.logger)
+	return h.mailer.SendVerification(user.Email, vry.Plaintext(), h.logger)
 }
 
 func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
@@ -120,7 +123,7 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.store.GetForCodes(input.Plaintext)
+	user, err := h.store.GetByCode(input.Plaintext)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUserNotFound):
@@ -146,7 +149,7 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.verifications.DeleteAllByUserID(user.ID)
+	err = h.verification.DeleteAllByUserID(user.ID)
 	if err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 		return

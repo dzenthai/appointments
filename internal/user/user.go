@@ -97,7 +97,7 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) GetForCodes(plaintext string) (*User, error) {
+func (s *Store) GetByCode(plaintext string) (*User, error) {
 
 	codeHash := sha256.Sum256([]byte(plaintext))
 

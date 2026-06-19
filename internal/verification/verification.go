@@ -12,7 +12,7 @@ import (
 type Verification struct {
 	UserID int64
 	Code
-	TTL time.Time
+	ExpiresAt time.Time
 }
 
 type Code struct {
@@ -30,8 +30,8 @@ func NewStore(db *sql.DB) *Store {
 
 func NewCode(userID int64, ttl time.Duration) (*Verification, error) {
 	vry := &Verification{
-		UserID: userID,
-		TTL:    time.Now().Add(ttl),
+		UserID:    userID,
+		ExpiresAt: time.Now().Add(ttl),
 	}
 
 	randBytes := make([]byte, 16)
@@ -59,12 +59,12 @@ func (s *Store) Create(v *Verification) error {
 		`INSERT INTO verifications (user_id, code_hash, ttl)
 		VALUES ($1, $2, $3) 
 		ON CONFLICT (user_id) 
-      	DO UPDATE SET code_hash = EXCLUDED.code_hash, ttl = EXCLUDED.ttl`
+      	DO UPDATE SET code_hash = EXCLUDED.code_hash, expires_at  = EXCLUDED.ttl`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
-	args := []any{v.UserID, v.Code.hash, v.TTL}
+	args := []any{v.UserID, v.Code.hash, v.ExpiresAt}
 
 	_, err := s.db.ExecContext(ctx, query, args...)
 	if err != nil {
