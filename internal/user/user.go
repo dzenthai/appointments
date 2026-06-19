@@ -3,6 +3,7 @@ package user
 import (
 	"appointments/internal/validator"
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"time"
@@ -13,6 +14,8 @@ import (
 
 var (
 	ErrDuplicateEmail = errors.New("duplicated email")
+	ErrUserNotFound   = errors.New("user not found")
+	ErrEditConflict   = errors.New("edit conflict")
 )
 
 type User struct {
@@ -21,7 +24,7 @@ type User struct {
 	SecondName string    `json:"second_name"`
 	Email      string    `json:"email"`
 	Password   password  `json:"-"`
-	Activated  bool      `json:"activated"`
+	Verified   bool      `json:"verified"`
 	CreatedAt  time.Time `json:"created_at"`
 	Version    int       `json:"version"`
 }
@@ -94,18 +97,89 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
+func (s *Store) GetForCodes(plaintext string) (*User, error) {
+
+	codeHash := sha256.Sum256([]byte(plaintext))
+
+	query := `
+		SELECT users.id, users.first_name, users.second_name, users.email, users.password_hash, users.verified, users.created_at, users.version
+		FROM users
+		INNER JOIN verifications
+		ON users.id = verifications.user_id
+		WHERE verifications.code_hash = $1
+		AND verifications.ttl > $2`
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+
+	var user User
+
+	err := s.db.QueryRowContext(ctx, query, codeHash[:], time.Now()).Scan(
+		&user.ID,
+		&user.FirstName,
+		&user.SecondName,
+		&user.Email,
+		&user.Password.hash,
+		&user.Verified,
+		&user.CreatedAt,
+		&user.Version,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (s *Store) GetByEmail(email string) (*User, error) {
+	query :=
+		`SELECT id, first_name, second_name, email, password_hash, verified, created_at, version FROM users WHERE email = $1`
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+
+	var user User
+
+	err := s.db.QueryRowContext(ctx, query, email).Scan(
+		&user.ID,
+		&user.FirstName,
+		&user.SecondName,
+		&user.Email,
+		&user.Password.hash,
+		&user.Verified,
+		&user.CreatedAt,
+		&user.Version,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrUserNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
+}
+
 func (s *Store) Insert(user *User) error {
 	query :=
 		`INSERT INTO users (first_name, second_name, email, password_hash)  
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, activated, created_at, version`
+		RETURNING id, verified, created_at, version`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
 	args := []any{user.FirstName, user.SecondName, user.Email, user.Password.hash}
 
-	err := s.db.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.Activated, &user.CreatedAt, &user.Version)
+	err := s.db.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.Verified, &user.CreatedAt, &user.Version)
 	if err != nil {
 		pgErr, exist := errors.AsType[*pgconn.PgError](err)
 		if exist && pgErr.Code == "23505" {
@@ -113,5 +187,39 @@ func (s *Store) Insert(user *User) error {
 		}
 		return err
 	}
+	return nil
+}
+
+func (s *Store) Update(user *User) error {
+	query :=
+		`UPDATE users
+		SET first_name = $1,
+		second_name = $2,
+		email = $3,
+		password_hash = $4,
+		verified = $5,
+		version = version + 1
+		WHERE id = $6 AND version = $7
+		RETURNING version`
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+
+	args := []any{user.FirstName, user.SecondName, user.Email, user.Password.hash, user.Verified, user.ID, user.Version}
+
+	err := s.db.QueryRowContext(ctx, query, args...).Scan(&user.Version)
+	if err != nil {
+		pgErr, exist := errors.AsType[*pgconn.PgError](err)
+		if exist && pgErr.Code == "23505" {
+			return ErrDuplicateEmail
+		}
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+
 	return nil
 }

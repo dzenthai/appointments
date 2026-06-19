@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 )
 
 func main() {
@@ -37,7 +38,11 @@ func run() error {
 	m := mailer.New(cfg.Resend.APIKey, cfg.Resend.Sender)
 
 	s := store.New(db)
-	userHandler := user.NewHandler(s.User, logger, m)
+	dur, err := time.ParseDuration(cfg.CodeTTL)
+	if err != nil {
+		return err
+	}
+	userHandler := user.NewHandler(s.User, s.Verification, logger, m, dur)
 
 	srv := server.New(cfg, logger, userHandler)
 

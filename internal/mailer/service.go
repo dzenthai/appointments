@@ -4,7 +4,7 @@ import (
 	"log/slog"
 )
 
-type VerificationEmailData struct {
+type CodeEmailData struct {
 	Subject string
 	Message string
 	Hint    string
@@ -12,7 +12,7 @@ type VerificationEmailData struct {
 }
 
 func (m *Mailer) SendVerification(email, code string, logger *slog.Logger) error {
-	data := VerificationEmailData{
+	data := CodeEmailData{
 		Subject: "Email Confirmation",
 		Message: "To complete your registration, please use the confirmation code:",
 		Hint:    "If you did not request registration, ignore this email.",
