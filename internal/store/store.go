@@ -1,19 +1,19 @@
 package store
 
 import (
+	"appointments/internal/token"
 	"appointments/internal/user"
-	"appointments/internal/verification"
 	"database/sql"
 )
 
 type Store struct {
 	User         *user.Store
-	Verification *verification.Store
+	Verification *token.Store
 }
 
 func New(db *sql.DB) *Store {
 	return &Store{
 		User:         user.NewStore(db),
-		Verification: verification.NewStore(db),
+		Verification: token.NewStore(db),
 	}
 }

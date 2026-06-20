@@ -3,8 +3,8 @@ package user
 import (
 	"appointments/internal/jsonutil"
 	"appointments/internal/mailer"
+	"appointments/internal/token"
 	"appointments/internal/validator"
-	"appointments/internal/verification"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -12,20 +12,20 @@ import (
 )
 
 type Handler struct {
-	store        *Store
-	verification *verification.Store
-	logger       *slog.Logger
-	mailer       *mailer.Mailer
-	codeTTL      time.Duration
+	store       *Store
+	token       *token.Store
+	logger      *slog.Logger
+	mailer      *mailer.Mailer
+	vryTokenTTL time.Duration
 }
 
-func NewHandler(store *Store, verifications *verification.Store, logger *slog.Logger, mailer *mailer.Mailer, codeTTL time.Duration) *Handler {
+func NewHandler(store *Store, token *token.Store, logger *slog.Logger, mailer *mailer.Mailer, vryTokenTTL time.Duration) *Handler {
 	return &Handler{
-		store:        store,
-		verification: verifications,
-		logger:       logger,
-		mailer:       mailer,
-		codeTTL:      codeTTL,
+		store:       store,
+		token:       token,
+		logger:      logger,
+		mailer:      mailer,
+		vryTokenTTL: vryTokenTTL,
 	}
 }
 
@@ -98,18 +98,17 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) sendVerificationCode(user User) error {
-	vry, err := verification.NewCode(user.ID, h.codeTTL)
+	vry, err := token.NewVerification(user.ID, h.vryTokenTTL)
 	if err != nil {
 		return err
 	}
 
-	err = h.verification.Create(vry)
+	err = h.token.Create(vry)
 	if err != nil {
 		return err
 	}
 
-	// todo goroutine
-	return h.mailer.SendVerification(user.Email, vry.Plaintext(), h.logger)
+	return h.mailer.SendVerification(user.Email, vry.Plaintext, h.logger)
 }
 
 func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +122,7 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.store.GetByCode(input.Plaintext)
+	user, err := h.store.GetByToken(input.Plaintext, token.ScopeVerification)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUserNotFound):
@@ -149,7 +148,7 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.verification.DeleteAllByUserID(user.ID)
+	err = h.token.DeleteAllByUserID(user.ID)
 	if err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 		return

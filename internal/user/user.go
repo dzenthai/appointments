@@ -1,6 +1,7 @@
 package user
 
 import (
+	"appointments/internal/token"
 	"appointments/internal/validator"
 	"context"
 	"crypto/sha256"
@@ -97,24 +98,25 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) GetByCode(plaintext string) (*User, error) {
+func (s *Store) GetByToken(plaintext string, scope token.Scope) (*User, error) {
 
 	codeHash := sha256.Sum256([]byte(plaintext))
 
 	query := `
 		SELECT users.id, users.first_name, users.second_name, users.email, users.password_hash, users.verified, users.created_at, users.version
 		FROM users
-		INNER JOIN verifications
-		ON users.id = verifications.user_id
-		WHERE verifications.code_hash = $1
-		AND verifications.ttl > $2`
+		INNER JOIN tokens
+		ON users.id = tokens.user_id
+		WHERE tokens.code_hash = $1
+		AND tokens.scope = $2
+		AND tokens.expires_at > $3`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
 	var user User
 
-	err := s.db.QueryRowContext(ctx, query, codeHash[:], time.Now()).Scan(
+	err := s.db.QueryRowContext(ctx, query, codeHash[:], scope, time.Now()).Scan(
 		&user.ID,
 		&user.FirstName,
 		&user.SecondName,

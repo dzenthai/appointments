@@ -38,7 +38,7 @@ func run() error {
 	m := mailer.New(cfg.Resend.APIKey, cfg.Resend.Sender)
 
 	s := store.New(db)
-	dur, err := time.ParseDuration(cfg.CodeTTL)
+	dur, err := time.ParseDuration(cfg.VryTokenTTL)
 	if err != nil {
 		return err
 	}
