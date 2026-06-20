@@ -68,7 +68,7 @@ func (s *Store) CreateVerification(v *Token) error {
 		`INSERT INTO tokens (user_id, token_hash, scope, expires_at)
 		VALUES ($1, $2, $3, $4) 
 		ON CONFLICT (user_id) 
-      	DO UPDATE SET token_hash = EXCLUDED.token_hash, scope = EXCLUDED.scope, expires_at  = EXCLUDED.expires_at`
+      	DO UPDATE SET token_hash = EXCLUDED.token_hash, scope = 'verification', expires_at  = EXCLUDED.expires_at`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
