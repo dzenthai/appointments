@@ -100,14 +100,14 @@ func NewStore(db *sql.DB) *Store {
 
 func (s *Store) GetByToken(plaintext string, scope token.Scope) (*User, error) {
 
-	codeHash := sha256.Sum256([]byte(plaintext))
+	tokenHash := sha256.Sum256([]byte(plaintext))
 
 	query := `
 		SELECT users.id, users.first_name, users.second_name, users.email, users.password_hash, users.verified, users.created_at, users.version
 		FROM users
 		INNER JOIN tokens
 		ON users.id = tokens.user_id
-		WHERE tokens.code_hash = $1
+		WHERE tokens.token_hash = $1
 		AND tokens.scope = $2
 		AND tokens.expires_at > $3`
 
@@ -116,7 +116,7 @@ func (s *Store) GetByToken(plaintext string, scope token.Scope) (*User, error) {
 
 	var user User
 
-	err := s.db.QueryRowContext(ctx, query, codeHash[:], scope, time.Now()).Scan(
+	err := s.db.QueryRowContext(ctx, query, tokenHash[:], scope, time.Now()).Scan(
 		&user.ID,
 		&user.FirstName,
 		&user.SecondName,

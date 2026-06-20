@@ -12,8 +12,8 @@ import (
 type Scope string
 
 const (
-	ScopeVerification   = "verification"
-	ScopeAuthentication = "authentication"
+	ScopeVerification   = Scope("verification")
+	ScopeAuthentication = Scope("authentication")
 )
 
 type Token struct {
@@ -41,7 +41,7 @@ func NewAuthentication(userID int64, ttl time.Duration) (*Token, error) {
 }
 
 func New(userID int64, scope Scope, ttl time.Duration, bytes int) (*Token, error) {
-	vry := &Token{
+	token := &Token{
 		UserID:    userID,
 		Scope:     scope,
 		ExpiresAt: time.Now().Add(ttl),
@@ -54,21 +54,21 @@ func New(userID int64, scope Scope, ttl time.Duration, bytes int) (*Token, error
 		return nil, err
 	}
 
-	vry.Plaintext = base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(randBytes)
+	token.Plaintext = base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(randBytes)
 
-	hash := sha256.Sum256([]byte(vry.Plaintext))
+	hash := sha256.Sum256([]byte(token.Plaintext))
 
-	vry.Hash = hash[:]
+	token.Hash = hash[:]
 
-	return vry, nil
+	return token, nil
 }
 
-func (s *Store) Create(v *Token) error {
+func (s *Store) CreateVerification(v *Token) error {
 	query :=
-		`INSERT INTO tokens (user_id, code_hash, scope, expires_at)
+		`INSERT INTO tokens (user_id, token_hash, scope, expires_at)
 		VALUES ($1, $2, $3, $4) 
 		ON CONFLICT (user_id) 
-      	DO UPDATE SET code_hash = EXCLUDED.code_hash, scope = EXCLUDED.scope, expires_at  = EXCLUDED.expires_at`
+      	DO UPDATE SET token_hash = EXCLUDED.token_hash, scope = EXCLUDED.scope, expires_at  = EXCLUDED.expires_at`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()

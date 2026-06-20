@@ -103,7 +103,7 @@ func (h *Handler) sendVerificationCode(user User) error {
 		return err
 	}
 
-	err = h.token.Create(vry)
+	err = h.token.CreateVerification(vry)
 	if err != nil {
 		return err
 	}
