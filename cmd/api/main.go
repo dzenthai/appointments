@@ -45,7 +45,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	userHandler := user.NewHandler(s.User, s.Verification, logger, m, dur)
+	userHandler := user.NewHandler(s.User, s.Verification, logger, wg, m, dur)
 
 	srv := server.New(cfg, logger, wg, userHandler)
 

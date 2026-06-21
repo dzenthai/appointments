@@ -97,7 +97,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.sendVerificationCode(w, r, user)
+	h.sendVerificationCode(user)
 
 	err = jsonutil.WriteJSON(w, http.StatusAccepted, jsonutil.Envelope{"message": "check your email to complete registration"}, nil)
 	if err != nil {
@@ -105,7 +105,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) sendVerificationCode(w http.ResponseWriter, r *http.Request, user User) {
+func (h *Handler) sendVerificationCode(user User) {
 	h.wg.Add(1)
 	go func() {
 		defer h.wg.Done()
@@ -116,19 +116,19 @@ func (h *Handler) sendVerificationCode(w http.ResponseWriter, r *http.Request, u
 		}()
 		vry, err := token.NewVerification(user.ID, h.vryTokenTTL)
 		if err != nil {
-			jsonutil.ServerErrorResponse(w, r, err, h.logger)
+			h.logger.Error("failed to send verification email", "err", err)
 			return
 		}
 
 		err = h.token.CreateVerification(vry)
 		if err != nil {
-			jsonutil.ServerErrorResponse(w, r, err, h.logger)
+			h.logger.Error("failed to send verification email", "err", err)
 			return
 		}
 
 		err = h.mailer.SendVerification(user.Email, vry.Plaintext, h.logger)
 		if err != nil {
-			jsonutil.ServerErrorResponse(w, r, err, h.logger)
+			h.logger.Error("failed to send verification email", "err", err)
 			return
 		}
 	}()

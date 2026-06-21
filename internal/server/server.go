@@ -55,10 +55,16 @@ func (s *Server) Serve() error {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 		defer cancel()
 
+		err := srv.Shutdown(ctx)
+		if err != nil {
+			shutdownError <- err
+		}
+
 		s.logger.Info("completing background tasks", "addr", srv.Addr)
 
 		s.wg.Wait()
-		shutdownError <- srv.Shutdown(ctx)
+
+		shutdownError <- nil
 	}()
 
 	err := srv.ListenAndServe()
