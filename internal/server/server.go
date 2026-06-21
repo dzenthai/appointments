@@ -3,9 +3,14 @@ package server
 import (
 	"appointments/internal/config"
 	"appointments/internal/user"
+	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -35,5 +40,27 @@ func (s *Server) Serve() error {
 
 	s.logger.Info("starting server", "port", s.cfg.Port, "env", s.cfg.Env)
 
-	return srv.ListenAndServe()
+	shutdownError := make(chan error)
+
+	go func() {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		sig := <-quit
+
+		s.logger.Info("shutting down the server", "signal", sig.String())
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+		defer cancel()
+
+		s.logger.Info("completing background tasks", "addr", srv.Addr)
+
+		shutdownError <- srv.Shutdown(ctx)
+	}()
+
+	err := srv.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	return <-shutdownError
 }
