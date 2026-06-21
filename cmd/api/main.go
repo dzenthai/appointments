@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -26,6 +27,8 @@ func run() error {
 	cfg := config.Load()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	var wg *sync.WaitGroup
 
 	db, err := postgres.Open(cfg.DB)
 	if err != nil {
@@ -44,7 +47,7 @@ func run() error {
 	}
 	userHandler := user.NewHandler(s.User, s.Verification, logger, m, dur)
 
-	srv := server.New(cfg, logger, userHandler)
+	srv := server.New(cfg, logger, wg, userHandler)
 
 	return srv.Serve()
 }

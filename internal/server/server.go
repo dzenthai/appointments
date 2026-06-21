@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -17,13 +18,15 @@ import (
 type Server struct {
 	cfg    config.Config
 	logger *slog.Logger
+	wg     *sync.WaitGroup
 	users  *user.Handler
 }
 
-func New(cfg config.Config, logger *slog.Logger, users *user.Handler) *Server {
+func New(cfg config.Config, logger *slog.Logger, wg *sync.WaitGroup, users *user.Handler) *Server {
 	return &Server{
 		cfg:    cfg,
 		logger: logger,
+		wg:     wg,
 		users:  users,
 	}
 }
@@ -54,6 +57,7 @@ func (s *Server) Serve() error {
 
 		s.logger.Info("completing background tasks", "addr", srv.Addr)
 
+		s.wg.Wait()
 		shutdownError <- srv.Shutdown(ctx)
 	}()
 

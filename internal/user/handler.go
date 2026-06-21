@@ -6,8 +6,10 @@ import (
 	"appointments/internal/token"
 	"appointments/internal/validator"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -15,15 +17,24 @@ type Handler struct {
 	store       *Store
 	token       *token.Store
 	logger      *slog.Logger
+	wg          *sync.WaitGroup
 	mailer      *mailer.Mailer
 	vryTokenTTL time.Duration
 }
 
-func NewHandler(store *Store, token *token.Store, logger *slog.Logger, mailer *mailer.Mailer, vryTokenTTL time.Duration) *Handler {
+func NewHandler(
+	store *Store,
+	token *token.Store,
+	logger *slog.Logger,
+	wg *sync.WaitGroup,
+	mailer *mailer.Mailer,
+	vryTokenTTL time.Duration,
+) *Handler {
 	return &Handler{
 		store:       store,
 		token:       token,
 		logger:      logger,
+		wg:          wg,
 		mailer:      mailer,
 		vryTokenTTL: vryTokenTTL,
 	}
@@ -86,10 +97,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err = h.sendVerificationCode(user); err != nil {
-		jsonutil.ServerErrorResponse(w, r, err, h.logger)
-		return
-	}
+	h.sendVerificationCode(w, r, user)
 
 	err = jsonutil.WriteJSON(w, http.StatusAccepted, jsonutil.Envelope{"message": "check your email to complete registration"}, nil)
 	if err != nil {
@@ -97,18 +105,33 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) sendVerificationCode(user User) error {
-	vry, err := token.NewVerification(user.ID, h.vryTokenTTL)
-	if err != nil {
-		return err
-	}
+func (h *Handler) sendVerificationCode(w http.ResponseWriter, r *http.Request, user User) {
+	h.wg.Add(1)
+	go func() {
+		defer h.wg.Done()
+		defer func() {
+			if err := recover(); err != nil {
+				h.logger.Error("panic recovering", "err", fmt.Errorf("%v", err))
+			}
+		}()
+		vry, err := token.NewVerification(user.ID, h.vryTokenTTL)
+		if err != nil {
+			jsonutil.ServerErrorResponse(w, r, err, h.logger)
+			return
+		}
 
-	err = h.token.CreateVerification(vry)
-	if err != nil {
-		return err
-	}
+		err = h.token.CreateVerification(vry)
+		if err != nil {
+			jsonutil.ServerErrorResponse(w, r, err, h.logger)
+			return
+		}
 
-	return h.mailer.SendVerification(user.Email, vry.Plaintext, h.logger)
+		err = h.mailer.SendVerification(user.Email, vry.Plaintext, h.logger)
+		if err != nil {
+			jsonutil.ServerErrorResponse(w, r, err, h.logger)
+			return
+		}
+	}()
 }
 
 func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {

@@ -11,5 +11,5 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("POST /v1/users", s.users.Register)
 	mux.HandleFunc("PUT /v1/verify", s.users.Verify)
 
-	return s.panicRecovery(mux)
+	return s.recoverPanic(mux)
 }
