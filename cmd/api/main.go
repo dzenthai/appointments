@@ -28,7 +28,7 @@ func run() error {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	var wg *sync.WaitGroup
+	wg := &sync.WaitGroup{}
 
 	db, err := postgres.Open(cfg.DB)
 	if err != nil {
@@ -45,7 +45,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	userHandler := user.NewHandler(s.User, s.Verification, logger, wg, m, dur)
+	userHandler := user.NewHandler(s.User, s.Token, logger, wg, m, dur)
 
 	srv := server.New(cfg, logger, wg, userHandler)
 

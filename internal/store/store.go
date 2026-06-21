@@ -7,13 +7,13 @@ import (
 )
 
 type Store struct {
-	User         *user.Store
-	Verification *token.Store
+	User  *user.Store
+	Token *token.Store
 }
 
 func New(db *sql.DB) *Store {
 	return &Store{
-		User:         user.NewStore(db),
-		Verification: token.NewStore(db),
+		User:  user.NewStore(db),
+		Token: token.NewStore(db),
 	}
 }
