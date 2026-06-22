@@ -19,8 +19,8 @@ func ServerErrorResponse(w http.ResponseWriter, r *http.Request, err error, logg
 	errorResponse(w, http.StatusInternalServerError, message)
 }
 
-func NotFoundResponse(w http.ResponseWriter) {
-	message := "the requested resource could not be found"
+func InvalidVerificationTokenResponse(w http.ResponseWriter) {
+	message := "invalid verification token"
 	errorResponse(w, http.StatusNotFound, message)
 }
 

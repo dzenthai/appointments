@@ -116,13 +116,13 @@ func (h *Handler) sendVerificationCode(user User) {
 		}()
 		vry, err := token.NewVerification(user.ID, h.vryTokenTTL)
 		if err != nil {
-			h.logger.Error("failed to send verification email", "err", err)
+			h.logger.Error("failed to create verification token", "err", err)
 			return
 		}
 
 		err = h.token.CreateVerification(vry)
 		if err != nil {
-			h.logger.Error("failed to send verification email", "err", err)
+			h.logger.Error("failed to save verification token", "err", err)
 			return
 		}
 
@@ -149,7 +149,7 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUserNotFound):
-			jsonutil.BadRequestResponse(w, err)
+			jsonutil.InvalidVerificationTokenResponse(w)
 		default:
 			jsonutil.ServerErrorResponse(w, r, err, h.logger)
 		}
