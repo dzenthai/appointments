@@ -19,10 +19,11 @@ type Mailer struct {
 	logger *slog.Logger
 }
 
-func New(apiKey string, sender string) *Mailer {
+func New(apiKey string, sender string, logger *slog.Logger) *Mailer {
 	return &Mailer{
 		client: resend.NewClient(apiKey),
 		sender: sender,
+		logger: logger,
 	}
 }
 
