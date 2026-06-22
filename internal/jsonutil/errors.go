@@ -37,7 +37,8 @@ func FailedValidationResponse(w http.ResponseWriter, errors map[string]string) {
 	errorResponse(w, http.StatusBadRequest, errors)
 }
 
-func InvalidAuthToken(w http.ResponseWriter) {
-	message := "invalid auth token"
+func InvalidAuthToken(w http.ResponseWriter, r *http.Request) {
+	r.Header.Set("WWW-Authenticate", "Bearer")
+	message := "invalid or missing authentication token"
 	errorResponse(w, http.StatusUnauthorized, message)
 }
