@@ -120,7 +120,7 @@ func (h *Handler) sendVerificationCode(user User) {
 			return
 		}
 
-		err = h.mailer.SendVerification(user.Email, vry.Plaintext, h.logger)
+		err = h.mailer.SendVerification(user.Email, vry.Plaintext)
 		if err != nil {
 			h.logger.Error("failed to send verification email", "err", err)
 			return
@@ -130,7 +130,7 @@ func (h *Handler) sendVerificationCode(user User) {
 
 func (h *Handler) sendExistingAccount(user User) {
 	background.Run(h.wg, h.logger, func() {
-		err := h.mailer.SendExistingAccount(user.Email, h.logger)
+		err := h.mailer.SendExistingAccount(user.Email)
 		if err != nil {
 			h.logger.Error("failed to send existing account email", "err", err)
 		}

@@ -14,14 +14,15 @@ import (
 var tmpl embed.FS
 
 type Mailer struct {
-	Client *resend.Client
-	Sender string
+	client *resend.Client
+	sender string
+	logger *slog.Logger
 }
 
 func New(apiKey string, sender string) *Mailer {
 	return &Mailer{
-		Client: resend.NewClient(apiKey),
-		Sender: sender,
+		client: resend.NewClient(apiKey),
+		sender: sender,
 	}
 }
 
@@ -40,12 +41,12 @@ func renderTemplate(tmplFile string, data any) (string, error) {
 	return html.String(), nil
 }
 
-func (m *Mailer) send(subject, html, recipient string, logger *slog.Logger) error {
+func (m *Mailer) send(subject, html, recipient string) error {
 
-	client := m.Client
+	client := m.client
 
 	params := &resend.SendEmailRequest{
-		From:    m.Sender,
+		From:    m.sender,
 		To:      []string{recipient},
 		Subject: subject,
 		Html:    html,
@@ -53,9 +54,9 @@ func (m *Mailer) send(subject, html, recipient string, logger *slog.Logger) erro
 
 	response, err := client.Emails.Send(params)
 	if err != nil {
-		logger.Error("failed to send email", "err", err)
+		m.logger.Error("failed to send email", "err", err)
 		return err
 	}
-	logger.Info("email sent", "id", response.Id)
+	m.logger.Info("email sent", "id", response.Id)
 	return nil
 }

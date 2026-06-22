@@ -1,9 +1,5 @@
 package mailer
 
-import (
-	"log/slog"
-)
-
 type CodeEmailData struct {
 	Subject string
 	Message string
@@ -17,7 +13,7 @@ type ExistingAccountData struct {
 	Hint    string
 }
 
-func (m *Mailer) SendVerification(email, code string, logger *slog.Logger) error {
+func (m *Mailer) SendVerification(email, code string) error {
 	data := CodeEmailData{
 		Subject: "Email Verification",
 		Message: "To complete your registration, please use the confirmation code:",
@@ -30,10 +26,10 @@ func (m *Mailer) SendVerification(email, code string, logger *slog.Logger) error
 		return err
 	}
 
-	return m.send(data.Subject, html, email, logger)
+	return m.send(data.Subject, html, email)
 }
 
-func (m *Mailer) SendExistingAccount(email string, logger *slog.Logger) error {
+func (m *Mailer) SendExistingAccount(email string) error {
 	data := ExistingAccountData{
 		Subject: "Registration attempt",
 		Message: "Someone tried to register an account using this email address.",
@@ -45,5 +41,5 @@ func (m *Mailer) SendExistingAccount(email string, logger *slog.Logger) error {
 		return err
 	}
 
-	return m.send(data.Subject, html, email, logger)
+	return m.send(data.Subject, html, email)
 }
