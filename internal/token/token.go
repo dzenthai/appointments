@@ -1,6 +1,7 @@
 package token
 
 import (
+	"appointments/internal/validator"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
@@ -30,6 +31,10 @@ type Store struct {
 
 func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
+}
+
+func ValidateAuthToken(v *validator.Validator, plaintext string) {
+	v.Check(plaintext == "", "token", "must be provided")
 }
 
 func NewVerification(userID int64, ttl time.Duration) (*Token, error) {

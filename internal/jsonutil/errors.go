@@ -36,3 +36,8 @@ func EditConflictResponse(w http.ResponseWriter) {
 func FailedValidationResponse(w http.ResponseWriter, errors map[string]string) {
 	errorResponse(w, http.StatusBadRequest, errors)
 }
+
+func InvalidAuthToken(w http.ResponseWriter) {
+	message := "invalid auth token"
+	errorResponse(w, http.StatusUnauthorized, message)
+}

@@ -185,3 +185,7 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 	}
 }
+
+func (h *Handler) Authenticate(plaintextToken string) (*User, error) {
+	return h.store.GetByToken(plaintextToken, token.ScopeAuthentication)
+}
