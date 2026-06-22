@@ -31,13 +31,14 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 		header := r.Header.Get("Authorization")
 
 		if header == "" {
+			user.SetUserContext(r, user.AnonymousUser)
 			next.ServeHTTP(w, r)
 			return
 		}
 
 		headerParts := strings.Split(header, " ")
 		if len(headerParts) != 2 || headerParts[0] != "Bearer" {
-			jsonutil.InvalidAuthToken(w, r)
+			jsonutil.InvalidAuthenticationToken(w, r)
 			return
 		}
 
@@ -54,7 +55,7 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 		if err != nil {
 			switch {
 			case errors.Is(err, user.ErrUserNotFound):
-				jsonutil.InvalidAuthToken(w, r)
+				jsonutil.InvalidAuthenticationToken(w, r)
 			default:
 				jsonutil.ServerErrorResponse(w, r, err, s.logger)
 			}

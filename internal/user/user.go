@@ -19,6 +19,8 @@ var (
 	ErrEditConflict   = errors.New("edit conflict")
 )
 
+var AnonymousUser = &User{}
+
 type User struct {
 	ID         int64     `json:"id"`
 	FirstName  string    `json:"first_name"`
