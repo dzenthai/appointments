@@ -84,7 +84,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if existing.Verified {
-				h.sendExistingAccount(user)
+				h.sendExistingAccount(*existing)
 				err = jsonutil.WriteJSON(w, http.StatusAccepted, jsonutil.Envelope{"message": "check your email to complete registration"}, nil)
 				if err != nil {
 					jsonutil.ServerErrorResponse(w, r, err, h.logger)
