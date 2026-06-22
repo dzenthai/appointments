@@ -1,12 +1,12 @@
 package user
 
 import (
+	"appointments/internal/background"
 	"appointments/internal/jsonutil"
 	"appointments/internal/mailer"
 	"appointments/internal/token"
 	"appointments/internal/validator"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -84,6 +84,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if existing.Verified {
+				h.sendExistingAccount(user)
 				err = jsonutil.WriteJSON(w, http.StatusAccepted, jsonutil.Envelope{"message": "check your email to complete registration"}, nil)
 				if err != nil {
 					jsonutil.ServerErrorResponse(w, r, err, h.logger)
@@ -106,14 +107,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) sendVerificationCode(user User) {
-	h.wg.Add(1)
-	go func() {
-		defer h.wg.Done()
-		defer func() {
-			if err := recover(); err != nil {
-				h.logger.Error("panic recovering", "err", fmt.Errorf("%v", err))
-			}
-		}()
+	background.Run(h.wg, h.logger, func() {
 		vry, err := token.NewVerification(user.ID, h.vryTokenTTL)
 		if err != nil {
 			h.logger.Error("failed to create verification token", "err", err)
@@ -131,7 +125,16 @@ func (h *Handler) sendVerificationCode(user User) {
 			h.logger.Error("failed to send verification email", "err", err)
 			return
 		}
-	}()
+	})
+}
+
+func (h *Handler) sendExistingAccount(user User) {
+	background.Run(h.wg, h.logger, func() {
+		err := h.mailer.SendExistingAccount(user.Email, h.logger)
+		if err != nil {
+			h.logger.Error("failed to send existing account email", "err", err)
+		}
+	})
 }
 
 func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {

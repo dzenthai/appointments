@@ -11,6 +11,12 @@ type CodeEmailData struct {
 	Code    string
 }
 
+type ExistingAccountData struct {
+	Subject string
+	Message string
+	Hint    string
+}
+
 func (m *Mailer) SendVerification(email, code string, logger *slog.Logger) error {
 	data := CodeEmailData{
 		Subject: "Email Verification",
@@ -20,6 +26,21 @@ func (m *Mailer) SendVerification(email, code string, logger *slog.Logger) error
 	}
 
 	html, err := renderTemplate("email_verification.tmpl", data)
+	if err != nil {
+		return err
+	}
+
+	return m.send(data.Subject, html, email, logger)
+}
+
+func (m *Mailer) SendExistingAccount(email string, logger *slog.Logger) error {
+	data := ExistingAccountData{
+		Subject: "Registration attempt",
+		Message: "Someone tried to register an account using this email address.",
+		Hint:    "If this wasn't you, you can safely ignore this email.",
+	}
+
+	html, err := renderTemplate("existing_account.tmpl", data)
 	if err != nil {
 		return err
 	}
