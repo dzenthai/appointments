@@ -47,7 +47,7 @@ func run() error {
 	}
 	userHandler := user.NewHandler(s.User, s.Token, logger, wg, m, dur)
 
-	srv := server.New(cfg, logger, wg, userHandler)
+	srv := server.New(cfg, logger, wg, userHandler, s.User)
 
 	return srv.Serve()
 }

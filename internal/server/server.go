@@ -16,18 +16,26 @@ import (
 )
 
 type Server struct {
-	cfg    config.Config
-	logger *slog.Logger
-	wg     *sync.WaitGroup
-	users  *user.Handler
+	cfg       config.Config
+	logger    *slog.Logger
+	wg        *sync.WaitGroup
+	users     *user.Handler
+	userStore *user.Store
 }
 
-func New(cfg config.Config, logger *slog.Logger, wg *sync.WaitGroup, users *user.Handler) *Server {
+func New(
+	cfg config.Config,
+	logger *slog.Logger,
+	wg *sync.WaitGroup,
+	users *user.Handler,
+	userStore *user.Store,
+) *Server {
 	return &Server{
-		cfg:    cfg,
-		logger: logger,
-		wg:     wg,
-		users:  users,
+		cfg:       cfg,
+		logger:    logger,
+		wg:        wg,
+		users:     users,
+		userStore: userStore,
 	}
 }
 
