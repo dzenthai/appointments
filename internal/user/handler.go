@@ -14,12 +14,13 @@ import (
 )
 
 type Handler struct {
-	store       *Store
-	token       *token.Store
-	logger      *slog.Logger
-	wg          *sync.WaitGroup
-	mailer      *mailer.Mailer
-	vryTokenTTL time.Duration
+	store        *Store
+	token        *token.Store
+	logger       *slog.Logger
+	wg           *sync.WaitGroup
+	mailer       *mailer.Mailer
+	vryTokenTTL  time.Duration
+	authTokenTTL time.Duration
 }
 
 func NewHandler(
@@ -29,14 +30,16 @@ func NewHandler(
 	wg *sync.WaitGroup,
 	mailer *mailer.Mailer,
 	vryTokenTTL time.Duration,
+	authTokenTTL time.Duration,
 ) *Handler {
 	return &Handler{
-		store:       store,
-		token:       token,
-		logger:      logger,
-		wg:          wg,
-		mailer:      mailer,
-		vryTokenTTL: vryTokenTTL,
+		store:        store,
+		token:        token,
+		logger:       logger,
+		wg:           wg,
+		mailer:       mailer,
+		vryTokenTTL:  vryTokenTTL,
+		authTokenTTL: authTokenTTL,
 	}
 }
 
@@ -114,7 +117,7 @@ func (h *Handler) sendVerificationCode(user User) {
 			return
 		}
 
-		err = h.token.CreateVerification(vry)
+		err = h.token.Create(vry)
 		if err != nil {
 			h.logger.Error("failed to save verification token", "err", err)
 			return
@@ -181,6 +184,67 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = jsonutil.WriteJSON(w, http.StatusOK, user, nil)
+	if err != nil {
+		jsonutil.ServerErrorResponse(w, r, err, h.logger)
+	}
+}
+
+func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Email             string `json:"email"`
+		PlaintextPassword string `json:"password"`
+	}
+
+	err := jsonutil.ReadJSON(w, r, &input)
+	if err != nil {
+		jsonutil.BadRequestResponse(w, err)
+		return
+	}
+
+	user, err := h.store.GetByEmail(input.Email)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrUserNotFound):
+			jsonutil.InvalidCredentials(w)
+		default:
+			jsonutil.ServerErrorResponse(w, r, err, h.logger)
+		}
+		return
+	}
+
+	match, err := user.Password.Matches(input.PlaintextPassword)
+	if err != nil {
+		jsonutil.ServerErrorResponse(w, r, err, h.logger)
+		return
+	}
+
+	if !match {
+		jsonutil.InvalidCredentials(w)
+		return
+	}
+
+	authToken, err := token.NewAuthentication(user.ID, h.authTokenTTL)
+	if err != nil {
+		jsonutil.ServerErrorResponse(w, r, err, h.logger)
+		return
+	}
+
+	err = h.token.Create(authToken)
+	if err != nil {
+		jsonutil.ServerErrorResponse(w, r, err, h.logger)
+		return
+	}
+
+	err = jsonutil.WriteJSON(
+		w,
+		http.StatusCreated,
+		jsonutil.Envelope{
+			"token":      authToken.Plaintext,
+			"expires_at": authToken.ExpiresAt,
+		},
+		nil,
+	)
+
 	if err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 	}

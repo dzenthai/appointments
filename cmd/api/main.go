@@ -41,11 +41,15 @@ func run() error {
 	m := mailer.New(cfg.Resend.APIKey, cfg.Resend.Sender, logger)
 
 	s := store.New(db)
-	dur, err := time.ParseDuration(cfg.VryTokenTTL)
+	vryDur, err := time.ParseDuration(cfg.VryTokenTTL)
 	if err != nil {
 		return err
 	}
-	userHandler := user.NewHandler(s.User, s.Token, logger, wg, m, dur)
+	authDur, err := time.ParseDuration(cfg.AuthTokenTTL)
+	if err != nil {
+		return err
+	}
+	userHandler := user.NewHandler(s.User, s.Token, logger, wg, m, vryDur, authDur)
 
 	srv := server.New(cfg, logger, wg, userHandler, s.User)
 

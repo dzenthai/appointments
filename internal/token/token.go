@@ -68,7 +68,7 @@ func New(userID int64, scope Scope, ttl time.Duration, bytes int) (*Token, error
 	return token, nil
 }
 
-func (s *Store) CreateVerification(v *Token) error {
+func (s *Store) Create(v *Token) error {
 	query :=
 		`INSERT INTO tokens (user_id, token_hash, scope, expires_at)
 		VALUES ($1, $2, $3, $4) 

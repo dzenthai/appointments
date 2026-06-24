@@ -9,7 +9,8 @@ func (s *Server) routes() http.Handler {
 
 	mux.HandleFunc("GET /v1/healthcheck", s.healthcheck)
 	mux.HandleFunc("POST /v1/users", s.users.Register)
-	mux.HandleFunc("PUT /v1/verify", s.users.Verify)
+	mux.HandleFunc("PUT /v1/users/verify", s.users.Verify)
+	mux.HandleFunc("POST /v1/users/login", s.users.Login)
 
 	return s.recoverPanic(mux)
 }

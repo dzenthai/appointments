@@ -42,3 +42,8 @@ func InvalidAuthenticationToken(w http.ResponseWriter, r *http.Request) {
 	message := "invalid or missing authentication token"
 	errorResponse(w, http.StatusUnauthorized, message)
 }
+
+func InvalidCredentials(w http.ResponseWriter) {
+	message := "invalid credentials"
+	errorResponse(w, http.StatusUnauthorized, message)
+}
