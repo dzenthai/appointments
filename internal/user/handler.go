@@ -117,7 +117,7 @@ func (h *Handler) sendVerificationCode(user User) {
 			return
 		}
 
-		err = h.token.Create(vry)
+		err = h.token.CreateVerification(vry)
 		if err != nil {
 			h.logger.Error("failed to save verification token", "err", err)
 			return
@@ -177,7 +177,7 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.token.DeleteAllByUserID(user.ID)
+	err = h.token.DeleteVerificationsByUserID(user.ID)
 	if err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 		return
@@ -229,7 +229,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.token.Create(authToken)
+	err = h.token.CreateAuthentication(authToken)
 	if err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 		return
