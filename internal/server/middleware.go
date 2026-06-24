@@ -31,7 +31,7 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 		header := r.Header.Get("Authorization")
 
 		if header == "" {
-			user.SetUserContext(r, user.AnonymousUser)
+			r = user.SetUserContext(r, user.AnonymousUser)
 			next.ServeHTTP(w, r)
 			return
 		}
