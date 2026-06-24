@@ -37,6 +37,10 @@ type password struct {
 	hash      []byte
 }
 
+func (user *User) IsAnonymous() bool {
+	return user == AnonymousUser
+}
+
 func (p *password) Set(plaintext string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(plaintext), 12)
 	if err != nil {

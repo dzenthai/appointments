@@ -38,7 +38,7 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 
 		headerParts := strings.Split(header, " ")
 		if len(headerParts) != 2 || headerParts[0] != "Bearer" {
-			jsonutil.InvalidAuthenticationToken(w, r)
+			jsonutil.InvalidAuthenticationTokenResponse(w, r)
 			return
 		}
 
@@ -55,7 +55,7 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 		if err != nil {
 			switch {
 			case errors.Is(err, user.ErrUserNotFound):
-				jsonutil.InvalidAuthenticationToken(w, r)
+				jsonutil.InvalidAuthenticationTokenResponse(w, r)
 			default:
 				jsonutil.ServerErrorResponse(w, r, err, s.logger)
 			}
@@ -66,4 +66,32 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (s *Server) requireAuthentication(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		u := user.GetUserContext(r)
+
+		if u.IsAnonymous() {
+			jsonutil.AuthenticationRequireResponse(w)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
+}
+
+func (s *Server) requireVerification(next http.HandlerFunc) http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		u := user.GetUserContext(r)
+
+		if !u.Verified {
+			jsonutil.VerificationRequireResponse(w)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
+
+	return s.requireAuthentication(fn)
 }

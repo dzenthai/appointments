@@ -68,7 +68,7 @@ func New(userID int64, scope Scope, ttl time.Duration, bytes int) (*Token, error
 	return token, nil
 }
 
-func (s *Store) CreateVerification(v *Token) error {
+func (s *Store) CreateVerification(token *Token) error {
 	query :=
 		`INSERT INTO tokens (user_id, token_hash, scope, expires_at)
 		VALUES ($1, $2, $3, $4) 
@@ -79,7 +79,7 @@ func (s *Store) CreateVerification(v *Token) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
-	args := []any{v.UserID, v.Hash, v.Scope, v.ExpiresAt}
+	args := []any{token.UserID, token.Hash, token.Scope, token.ExpiresAt}
 
 	_, err := s.db.ExecContext(ctx, query, args...)
 	if err != nil {
@@ -89,7 +89,7 @@ func (s *Store) CreateVerification(v *Token) error {
 	return nil
 }
 
-func (s *Store) CreateAuthentication(v *Token) error {
+func (s *Store) CreateAuthentication(token *Token) error {
 	query :=
 		`INSERT INTO tokens (user_id, token_hash, scope, expires_at) 
 		VALUES ($1, $2, $3, $4)`
@@ -97,7 +97,7 @@ func (s *Store) CreateAuthentication(v *Token) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
-	args := []any{v.UserID, v.Hash, v.Scope, v.ExpiresAt}
+	args := []any{token.UserID, token.Hash, token.Scope, token.ExpiresAt}
 
 	_, err := s.db.ExecContext(ctx, query, args...)
 	if err != nil {

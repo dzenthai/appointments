@@ -205,7 +205,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUserNotFound):
-			jsonutil.InvalidCredentials(w)
+			jsonutil.InvalidCredentialsResponse(w)
 		default:
 			jsonutil.ServerErrorResponse(w, r, err, h.logger)
 		}
@@ -219,7 +219,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !match {
-		jsonutil.InvalidCredentials(w)
+		jsonutil.InvalidCredentialsResponse(w)
 		return
 	}
 
