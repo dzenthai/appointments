@@ -49,7 +49,6 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		SecondName        string `json:"second_name"`
 		Email             string `json:"email"`
 		PlaintextPassword string `json:"password"`
-		Role              string `json:"role"`
 	}
 
 	err := jsonutil.ReadJSON(w, r, &input)
@@ -62,7 +61,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		FirstName:  input.FirstName,
 		SecondName: input.SecondName,
 		Email:      input.Email,
-		Role:       Role(input.Role),
+		Role:       RoleClient,
 	}
 
 	err = user.Password.Set(input.PlaintextPassword)

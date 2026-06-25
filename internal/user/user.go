@@ -105,18 +105,6 @@ func ValidateUser(v *validator.Validator, user User) {
 	}
 
 	v.Check(user.Role != "", "role", "must be provided")
-	v.Check(checkUserRole(user.Role), "role", "invalid user role")
-}
-
-func checkUserRole(role Role) bool {
-	switch role {
-	case RoleClient:
-		return true
-	case RoleProvider:
-		return true
-	default:
-		return false
-	}
 }
 
 type Store struct {
