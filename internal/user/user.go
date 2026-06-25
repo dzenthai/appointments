@@ -21,12 +21,21 @@ var (
 
 var AnonymousUser = &User{}
 
+type Role string
+
+const (
+	RoleClient   = Role("client")
+	RoleProvider = Role("provider")
+	RoleAdmin    = Role("admin")
+)
+
 type User struct {
 	ID         int64     `json:"id"`
 	FirstName  string    `json:"first_name"`
 	SecondName string    `json:"second_name"`
 	Email      string    `json:"email"`
 	Password   password  `json:"-"`
+	Role       Role      `json:"role"`
 	Verified   bool      `json:"verified"`
 	CreatedAt  time.Time `json:"created_at"`
 	Version    int       `json:"version"`
@@ -94,6 +103,20 @@ func ValidateUser(v *validator.Validator, user User) {
 	if user.Password.hash == nil {
 		panic("missing password hash for user")
 	}
+
+	v.Check(user.Role != "", "role", "must be provided")
+	v.Check(checkUserRole(user.Role), "role", "invalid user role")
+}
+
+func checkUserRole(role Role) bool {
+	switch role {
+	case RoleClient:
+		return true
+	case RoleProvider:
+		return true
+	default:
+		return false
+	}
 }
 
 type Store struct {
@@ -109,7 +132,7 @@ func (s *Store) GetByToken(plaintext string, scope token.Scope) (*User, error) {
 	tokenHash := sha256.Sum256([]byte(plaintext))
 
 	query := `
-		SELECT users.id, users.first_name, users.second_name, users.email, users.password_hash, users.verified, users.created_at, users.version
+		SELECT users.id, users.first_name, users.second_name, users.email, users.password_hash, users.role, users.verified, users.created_at, users.version
 		FROM users
 		INNER JOIN tokens
 		ON users.id = tokens.user_id
@@ -128,6 +151,7 @@ func (s *Store) GetByToken(plaintext string, scope token.Scope) (*User, error) {
 		&user.SecondName,
 		&user.Email,
 		&user.Password.hash,
+		&user.Role,
 		&user.Verified,
 		&user.CreatedAt,
 		&user.Version,
@@ -146,7 +170,7 @@ func (s *Store) GetByToken(plaintext string, scope token.Scope) (*User, error) {
 
 func (s *Store) GetByEmail(email string) (*User, error) {
 	query :=
-		`SELECT id, first_name, second_name, email, password_hash, verified, created_at, version FROM users WHERE email = $1`
+		`SELECT id, first_name, second_name, email, password_hash, role, verified, created_at, version FROM users WHERE email = $1`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
@@ -159,6 +183,7 @@ func (s *Store) GetByEmail(email string) (*User, error) {
 		&user.SecondName,
 		&user.Email,
 		&user.Password.hash,
+		&user.Role,
 		&user.Verified,
 		&user.CreatedAt,
 		&user.Version,
@@ -178,14 +203,14 @@ func (s *Store) GetByEmail(email string) (*User, error) {
 
 func (s *Store) Insert(user *User) error {
 	query :=
-		`INSERT INTO users (first_name, second_name, email, password_hash)  
-		VALUES ($1, $2, $3, $4)
+		`INSERT INTO users (first_name, second_name, email, password_hash, role)  
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, verified, created_at, version`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
-	args := []any{user.FirstName, user.SecondName, user.Email, user.Password.hash}
+	args := []any{user.FirstName, user.SecondName, user.Email, user.Password.hash, user.Role}
 
 	err := s.db.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.Verified, &user.CreatedAt, &user.Version)
 	if err != nil {
@@ -205,15 +230,16 @@ func (s *Store) Update(user *User) error {
 		second_name = $2,
 		email = $3,
 		password_hash = $4,
-		verified = $5,
+		role = $5,
+		verified = $6,
 		version = version + 1
-		WHERE id = $6 AND version = $7
+		WHERE id = $7 AND version = $8
 		RETURNING version`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
-	args := []any{user.FirstName, user.SecondName, user.Email, user.Password.hash, user.Verified, user.ID, user.Version}
+	args := []any{user.FirstName, user.SecondName, user.Email, user.Password.hash, user.Role, user.Verified, user.ID, user.Version}
 
 	err := s.db.QueryRowContext(ctx, query, args...).Scan(&user.Version)
 	if err != nil {
