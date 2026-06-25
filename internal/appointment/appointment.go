@@ -8,15 +8,16 @@ import (
 type Status string
 
 const (
-	StatusScheduled = Status("Scheduled")
-	StatusConfirmed = Status("Confirmed")
-	StatusCancelled = Status("Cancelled")
-	StatusCompleted = Status("Completed")
+	StatusScheduled = Status("scheduled")
+	StatusConfirmed = Status("confirmed")
+	StatusCancelled = Status("cancelled")
+	StatusCompleted = Status("completed")
 )
 
 type Appointment struct {
 	ID          int64     `json:"id"`
-	UserID      int64     `json:"user_id"`
+	ClientID    int64     `json:"client_id"`
+	ProviderID  int64     `json:"provider_id"`
 	Title       string    `json:"title"`
 	Description string    `json:"description,omitempty"`
 	StartsAt    time.Time `json:"starts_at"`

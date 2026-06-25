@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users
     second_name   TEXT                        NOT NULL,
     email         CITEXT UNIQUE               NOT NULL,
     password_hash BYTEA                       NOT NULL,
+    role          TEXT                        NOT NULL DEFAULT 'client' CHECK ( role IN ('client', 'provider', 'admin')),
     verified      BOOL                        NOT NULL DEFAULT FALSE,
     created_at    TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW(),
     version       INTEGER                     NOT NULL DEFAULT 1
