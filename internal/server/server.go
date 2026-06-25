@@ -1,6 +1,7 @@
 package server
 
 import (
+	"appointments/internal/appointment"
 	"appointments/internal/config"
 	"appointments/internal/user"
 	"context"
@@ -16,11 +17,12 @@ import (
 )
 
 type Server struct {
-	cfg       config.Config
-	logger    *slog.Logger
-	wg        *sync.WaitGroup
-	users     *user.Handler
-	userStore *user.Store
+	cfg        config.Config
+	logger     *slog.Logger
+	wg         *sync.WaitGroup
+	users      *user.Handler
+	userStore  *user.Store
+	appHandler *appointment.Handler
 }
 
 func New(
@@ -29,13 +31,15 @@ func New(
 	wg *sync.WaitGroup,
 	users *user.Handler,
 	userStore *user.Store,
+	appHandler *appointment.Handler,
 ) *Server {
 	return &Server{
-		cfg:       cfg,
-		logger:    logger,
-		wg:        wg,
-		users:     users,
-		userStore: userStore,
+		cfg:        cfg,
+		logger:     logger,
+		wg:         wg,
+		users:      users,
+		userStore:  userStore,
+		appHandler: appHandler,
 	}
 }
 

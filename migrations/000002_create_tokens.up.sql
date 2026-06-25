@@ -1,6 +1,6 @@
 CREATE TABLE tokens (
-                        id         BIGSERIAL PRIMARY KEY,
-                        user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        id         BIGSERIAL PRIMARY KEY NOT NULL ,
+                        user_id    BIGINT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
                         token_hash BYTEA NOT NULL,
                         scope      TEXT NOT NULL,
                         expires_at TIMESTAMP(0) WITH TIME ZONE NOT NULL

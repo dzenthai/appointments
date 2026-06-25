@@ -1,6 +1,7 @@
 package main
 
 import (
+	"appointments/internal/appointment"
 	"appointments/internal/config"
 	"appointments/internal/mailer"
 	"appointments/internal/postgres"
@@ -40,7 +41,7 @@ func run() error {
 
 	m := mailer.New(cfg.Resend.APIKey, cfg.Resend.Sender, logger)
 
-	s := store.New(db)
+	str := store.New(db)
 	vryDur, err := time.ParseDuration(cfg.VryTokenTTL)
 	if err != nil {
 		return err
@@ -49,9 +50,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	userHandler := user.NewHandler(s.User, s.Token, logger, wg, m, vryDur, authDur)
+	userHandler := user.NewHandler(str.User, str.Token, logger, wg, m, vryDur, authDur)
+	appHandler := appointment.NewHandler(str.Appointment, logger)
 
-	srv := server.New(cfg, logger, wg, userHandler, s.User)
+	srv := server.New(cfg, logger, wg, userHandler, str.User, appHandler)
 
 	return srv.Serve()
 }
