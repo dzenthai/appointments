@@ -1,6 +1,7 @@
 package appointment
 
 import (
+	"appointments/internal/validator"
 	"context"
 	"database/sql"
 	"errors"
@@ -42,19 +43,35 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
+func ValidateAppointment(v *validator.Validator, apt *Appointment) {
+	v.Check(apt.ClientID != apt.ProviderID, "client_id", "client ID must not match provider ID")
+	v.Check(apt.Title != "", "title", "must be provided")
+	v.Check(apt.EndsAt.After(apt.StartsAt), "ends_at", "ends at must be greater that starts at")
+}
+
 func (s *Store) GetByID(id int64) (*Appointment, error) {
 	query :=
-		`SELECT client_id, provider_id, title, description, starts_at, ends_at, status, created_at, updated_at, version
+		`SELECT id, client_id, provider_id, title, description, starts_at, ends_at, status, created_at, updated_at, version
 		FROM appointments
 		WHERE id = $1`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
-	var app Appointment
+	var apt Appointment
 
 	err := s.db.QueryRowContext(ctx, query, id).Scan(
-		&app.ClientID,
+		&apt.ID,
+		&apt.ClientID,
+		&apt.ProviderID,
+		&apt.Title,
+		&apt.Description,
+		&apt.StartsAt,
+		&apt.EndsAt,
+		&apt.Status,
+		&apt.CreatedAt,
+		&apt.UpdatedAt,
+		&apt.Version,
 	)
 
 	if err != nil {
@@ -66,9 +83,29 @@ func (s *Store) GetByID(id int64) (*Appointment, error) {
 		}
 	}
 
-	return &app, nil
+	return &apt, nil
 }
 
-func (s *Store) Insert(app *Appointment) error {
+func (s *Store) Insert(apt *Appointment) error {
+	query :=
+		`INSERT INTO appointments (client_id, provider_id, title, description, starts_at, ends_at, status) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at, updated_at, version`
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+
+	args := []any{apt.ClientID, apt.ProviderID, apt.Title, apt.Description, apt.StartsAt, apt.EndsAt, apt.Status}
+
+	err := s.db.QueryRowContext(ctx, query, args...).Scan(
+		&apt.ID,
+		&apt.CreatedAt,
+		&apt.UpdatedAt,
+		&apt.Version,
+	)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

@@ -115,6 +115,40 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
+func (s *Store) GetByID(id int64) (*User, error) {
+	query :=
+		`SELECT users.id, users.first_name, users.second_name, users.email, users.password_hash, users.role, users.verified, users.created_at, users.version
+		FROM users WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+
+	var user User
+
+	err := s.db.QueryRowContext(ctx, query, id).Scan(
+		&user.ID,
+		&user.FirstName,
+		&user.SecondName,
+		&user.Email,
+		&user.Password.hash,
+		&user.Role,
+		&user.Verified,
+		&user.CreatedAt,
+		&user.Version,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrUserNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
+}
+
 func (s *Store) GetByToken(plaintext string, scope token.Scope) (*User, error) {
 
 	tokenHash := sha256.Sum256([]byte(plaintext))

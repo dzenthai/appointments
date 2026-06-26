@@ -51,7 +51,7 @@ func run() error {
 		return err
 	}
 	userHandler := user.NewHandler(str.User, str.Token, logger, wg, m, vryDur, authDur)
-	appHandler := appointment.NewHandler(str.Appointment, logger)
+	appHandler := appointment.NewHandler(str.Appointment, str.User, logger)
 
 	srv := server.New(cfg, logger, wg, userHandler, str.User, appHandler)
 
