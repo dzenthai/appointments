@@ -1,8 +1,14 @@
 package appointment
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"time"
+)
+
+var (
+	ErrAppointmentNotFound = errors.New("appointment not found")
 )
 
 type Status string
@@ -34,4 +40,35 @@ type Store struct {
 
 func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
+}
+
+func (s *Store) GetByID(id int64) (*Appointment, error) {
+	query :=
+		`SELECT client_id, provider_id, title, description, starts_at, ends_at, status, created_at, updated_at, version
+		FROM appointments
+		WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+
+	var app Appointment
+
+	err := s.db.QueryRowContext(ctx, query, id).Scan(
+		&app.ClientID,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrAppointmentNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &app, nil
+}
+
+func (s *Store) Insert(app *Appointment) error {
+	return nil
 }

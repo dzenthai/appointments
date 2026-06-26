@@ -57,3 +57,8 @@ func VerificationRequireResponse(w http.ResponseWriter) {
 	message := "verification require"
 	errorResponse(w, http.StatusForbidden, message)
 }
+
+func NotFoundResponse(w http.ResponseWriter) {
+	message := "not found"
+	errorResponse(w, http.StatusNotFound, message)
+}
