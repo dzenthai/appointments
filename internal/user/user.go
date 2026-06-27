@@ -115,41 +115,7 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) GetByID(id int64) (*User, error) {
-	query :=
-		`SELECT users.id, users.first_name, users.second_name, users.email, users.password_hash, users.role, users.verified, users.created_at, users.version
-		FROM users WHERE id = $1`
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
-
-	var user User
-
-	err := s.db.QueryRowContext(ctx, query, id).Scan(
-		&user.ID,
-		&user.FirstName,
-		&user.SecondName,
-		&user.Email,
-		&user.Password.hash,
-		&user.Role,
-		&user.Verified,
-		&user.CreatedAt,
-		&user.Version,
-	)
-
-	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			return nil, ErrUserNotFound
-		default:
-			return nil, err
-		}
-	}
-
-	return &user, nil
-}
-
-func (s *Store) GetByToken(plaintext string, scope token.Scope) (*User, error) {
+func (s *Store) GetByToken(ctx context.Context, plaintext string, scope token.Scope) (*User, error) {
 
 	tokenHash := sha256.Sum256([]byte(plaintext))
 
@@ -162,7 +128,7 @@ func (s *Store) GetByToken(plaintext string, scope token.Scope) (*User, error) {
 		AND tokens.scope = $2
 		AND tokens.expires_at > $3`
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
 	var user User
@@ -190,16 +156,27 @@ func (s *Store) GetByToken(plaintext string, scope token.Scope) (*User, error) {
 	return &user, nil
 }
 
-func (s *Store) GetByEmail(email string) (*User, error) {
+func (s *Store) GetByID(ctx context.Context, id int64) (*User, error) {
+	query :=
+		`SELECT id, first_name, second_name, email, password_hash, role, verified, created_at, version
+		FROM users WHERE id = $1`
+	return s.queryUser(ctx, query, id)
+}
+
+func (s *Store) GetByEmail(ctx context.Context, email string) (*User, error) {
 	query :=
 		`SELECT id, first_name, second_name, email, password_hash, role, verified, created_at, version FROM users WHERE email = $1`
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	return s.queryUser(ctx, query, email)
+}
+
+func (s *Store) queryUser(ctx context.Context, query string, arg any) (*User, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
 	var user User
 
-	err := s.db.QueryRowContext(ctx, query, email).Scan(
+	err := s.db.QueryRowContext(ctx, query, arg).Scan(
 		&user.ID,
 		&user.FirstName,
 		&user.SecondName,
@@ -221,15 +198,16 @@ func (s *Store) GetByEmail(email string) (*User, error) {
 	}
 
 	return &user, nil
+
 }
 
-func (s *Store) Insert(user *User) error {
+func (s *Store) Insert(ctx context.Context, user *User) error {
 	query :=
 		`INSERT INTO users (first_name, second_name, email, password_hash, role)  
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, verified, created_at, version`
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
 	args := []any{user.FirstName, user.SecondName, user.Email, user.Password.hash, user.Role}
@@ -245,7 +223,7 @@ func (s *Store) Insert(user *User) error {
 	return nil
 }
 
-func (s *Store) Update(user *User) error {
+func (s *Store) Update(ctx context.Context, user *User) error {
 	query :=
 		`UPDATE users
 		SET first_name = $1,
@@ -258,7 +236,7 @@ func (s *Store) Update(user *User) error {
 		WHERE id = $7 AND version = $8
 		RETURNING version`
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
 	args := []any{user.FirstName, user.SecondName, user.Email, user.Password.hash, user.Role, user.Verified, user.ID, user.Version}

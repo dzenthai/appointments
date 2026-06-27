@@ -68,7 +68,7 @@ func New(userID int64, scope Scope, ttl time.Duration, bytes int) (*Token, error
 	return token, nil
 }
 
-func (s *Store) CreateVerification(token *Token) error {
+func (s *Store) CreateVerification(ctx context.Context, token *Token) error {
 	query :=
 		`INSERT INTO tokens (user_id, token_hash, scope, expires_at)
 		VALUES ($1, $2, $3, $4) 
@@ -76,7 +76,7 @@ func (s *Store) CreateVerification(token *Token) error {
 		WHERE scope = 'verification'
       	DO UPDATE SET token_hash = EXCLUDED.token_hash, expires_at  = EXCLUDED.expires_at`
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
 	args := []any{token.UserID, token.Hash, token.Scope, token.ExpiresAt}
@@ -89,12 +89,12 @@ func (s *Store) CreateVerification(token *Token) error {
 	return nil
 }
 
-func (s *Store) CreateAuthentication(token *Token) error {
+func (s *Store) CreateAuthentication(ctx context.Context, token *Token) error {
 	query :=
 		`INSERT INTO tokens (user_id, token_hash, scope, expires_at) 
 		VALUES ($1, $2, $3, $4)`
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
 	args := []any{token.UserID, token.Hash, token.Scope, token.ExpiresAt}
@@ -107,10 +107,10 @@ func (s *Store) CreateAuthentication(token *Token) error {
 	return nil
 }
 
-func (s *Store) DeleteVerificationsByUserID(userID int64) error {
+func (s *Store) DeleteVerificationsByUserID(ctx context.Context, userID int64) error {
 	query := `DELETE FROM tokens WHERE user_id = $1 AND	scope = 'verification'`
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
 	_, err := s.db.ExecContext(ctx, query, userID)

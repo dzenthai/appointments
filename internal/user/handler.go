@@ -6,6 +6,7 @@ import (
 	"appointments/internal/mailer"
 	"appointments/internal/token"
 	"appointments/internal/validator"
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -77,12 +78,12 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.store.Insert(&user)
+	err = h.store.Insert(r.Context(), &user)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrDuplicateEmail):
 			var existing *User
-			existing, err = h.store.GetByEmail(input.Email)
+			existing, err = h.store.GetByEmail(r.Context(), input.Email)
 			if err != nil {
 				jsonutil.ServerErrorResponse(w, r, err, h.logger)
 				return
@@ -112,13 +113,15 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) sendVerificationCode(user User) {
 	background.Run(h.wg, h.logger, func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 		vry, err := token.NewVerification(user.ID, h.vryTokenTTL)
 		if err != nil {
 			h.logger.Error("failed to create verification token", "err", err)
 			return
 		}
 
-		err = h.token.CreateVerification(vry)
+		err = h.token.CreateVerification(ctx, vry)
 		if err != nil {
 			h.logger.Error("failed to save verification token", "err", err)
 			return
@@ -152,7 +155,7 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.store.GetByToken(input.Plaintext, token.ScopeVerification)
+	user, err := h.store.GetByToken(r.Context(), input.Plaintext, token.ScopeVerification)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUserNotFound):
@@ -165,7 +168,7 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 
 	user.Verified = true
 
-	err = h.store.Update(user)
+	err = h.store.Update(r.Context(), user)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrDuplicateEmail):
@@ -178,7 +181,7 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.token.DeleteVerificationsByUserID(user.ID)
+	err = h.token.DeleteVerificationsByUserID(r.Context(), user.ID)
 	if err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 		return
@@ -202,7 +205,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.store.GetByEmail(input.Email)
+	user, err := h.store.GetByEmail(r.Context(), input.Email)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUserNotFound):
@@ -230,7 +233,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.token.CreateAuthentication(authToken)
+	err = h.token.CreateAuthentication(r.Context(), authToken)
 	if err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 		return

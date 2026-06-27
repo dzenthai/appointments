@@ -51,7 +51,7 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 			return
 		}
 
-		u, err := s.userStore.GetByToken(authToken, token.ScopeAuthentication)
+		u, err := s.userStore.GetByToken(r.Context(), authToken, token.ScopeAuthentication)
 		if err != nil {
 			switch {
 			case errors.Is(err, user.ErrUserNotFound):
