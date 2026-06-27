@@ -34,7 +34,7 @@ func NewStore(db *sql.DB) *Store {
 }
 
 func ValidateAuthToken(v *validator.Validator, plaintext string) {
-	v.Check(plaintext == "", "token", "must be provided")
+	v.Check(plaintext != "", "token", "must be provided")
 }
 
 func NewVerification(userID int64, ttl time.Duration) (*Token, error) {
