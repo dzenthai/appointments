@@ -30,7 +30,7 @@ func (h *Handler) Show(w http.ResponseWriter, r *http.Request) {
 		jsonutil.BadRequestResponse(w, err)
 		return
 	}
-	apt, err := h.store.GetByID(id)
+	apt, err := h.store.GetByID(r.Context(), id)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrAppointmentNotFound):
@@ -99,7 +99,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	provider, err := h.userStore.GetByID(input.ProviderID)
+	provider, err := h.userStore.GetByID(r.Context(), input.ProviderID)
 	if err != nil {
 		switch {
 		case errors.Is(err, user.ErrUserNotFound):
@@ -130,7 +130,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.store.Insert(apt)
+	err = h.store.Insert(r.Context(), apt)
 	if err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 		return
