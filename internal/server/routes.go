@@ -15,6 +15,7 @@ func (s *Server) routes() http.Handler {
 
 	mux.HandleFunc("GET /v1/appointments/{id}", s.requireAuthentication(s.appHandler.Show))
 	mux.HandleFunc("POST /v1/appointments", s.requireVerification(s.appHandler.Create))
+	mux.HandleFunc("PATCH /v1/appointments/{id}", s.requireVerification(s.appHandler.Update))
 
 	return s.recoverPanic(s.authenticate(mux))
 }

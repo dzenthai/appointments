@@ -114,22 +114,26 @@ func (s *Store) Insert(ctx context.Context, apt *Appointment) error {
 func (s *Store) Update(ctx context.Context, apt *Appointment) error {
 	query :=
 		`UPDATE appointments 
-		SET title = $1,
-		    description = $2,
-		    starts_at = $3,
-		    ends_at = $4,
-		    status = $5,
+		SET provider_id = $1,
+		    title = $2,
+		    description = $3,
+		    starts_at = $4,
+		    ends_at = $5,
+		    status = $6,
 		    updated_at = now(),
 		    version = version + 1
-		WHERE id = $6 AND version = $7 
-		RETURNING updated_at, version`
+		WHERE id = $7 AND version = $8 
+		RETURNING client_id, provider_id, created_at, updated_at, version`
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
-	args := []any{apt.Title, apt.Description, apt.StartsAt, apt.EndsAt, apt.Status, apt.UpdatedAt}
+	args := []any{apt.ProviderID, apt.Title, apt.Description, apt.StartsAt, apt.EndsAt, apt.Status, apt.ID, apt.Version}
 
 	err := s.db.QueryRowContext(ctx, query, args...).Scan(
+		&apt.ClientID,
+		&apt.ProviderID,
+		&apt.CreatedAt,
 		&apt.UpdatedAt,
 		&apt.Version,
 	)
