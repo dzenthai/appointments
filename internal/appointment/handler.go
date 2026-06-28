@@ -25,142 +25,39 @@ func NewHandler(store *Store, userStore *user.Store, logger *slog.Logger) *Handl
 }
 
 func (h *Handler) Show(w http.ResponseWriter, r *http.Request) {
-	id, err := jsonutil.ReadIDParam(r)
-	if err != nil {
-		jsonutil.BadRequestResponse(w, err)
-		return
-	}
-	apt, err := h.store.GetByID(r.Context(), id)
-	if err != nil {
-		switch {
-		case errors.Is(err, ErrAppointmentNotFound):
-			jsonutil.NotFoundResponse(w)
-		default:
-			jsonutil.ServerErrorResponse(w, r, err, h.logger)
-		}
-		return
-	}
-
-	ok := h.checkAccessByContext(r, apt)
-
+	apt, ok := h.getAppointment(w, r)
 	if !ok {
-		jsonutil.NotFoundResponse(w)
 		return
 	}
 
-	err = jsonutil.WriteJSON(w, http.StatusOK, apt, nil)
+	err := jsonutil.WriteJSON(w, http.StatusOK, apt, nil)
 	if err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 	}
 }
 
-func (h *Handler) checkAccessByContext(r *http.Request, apt *Appointment) bool {
-	u := user.GetUserContext(r)
-	switch {
-	case u.Role == user.RoleClient && apt.ClientID == u.ID:
-		return true
-	case u.Role == user.RoleProvider && apt.ProviderID == u.ID:
-		return true
-	case u.Role == user.RoleAdmin:
-		return true
-	default:
-		h.logger.Warn("unauthorized appointment access attempt",
-			"user_id", u.ID,
-			"user_role", u.Role,
-			"appointment_id", apt.ID,
-			"appointment_client", apt.ClientID,
-			"appointment_provider", apt.ProviderID,
-		)
-		return false
-	}
-}
-
-func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	var input struct {
-		ProviderID  int64     `json:"provider_id"`
-		Title       string    `json:"title"`
-		Description string    `json:"description"`
-		StartsAt    time.Time `json:"starts_at"`
-		EndsAt      time.Time `json:"ends_at"`
-	}
-
-	err := jsonutil.ReadJSON(w, r, &input)
-	if err != nil {
-		jsonutil.BadRequestResponse(w, err)
+func (h *Handler) updateStatus(w http.ResponseWriter, r *http.Request, status Status) {
+	apt, ok := h.getAppointment(w, r)
+	if !ok {
 		return
 	}
-
 	v := validator.New()
 
-	u := user.GetUserContext(r)
-	if u.Role != user.RoleClient {
-		v.AddError("client_id", "invalid client role")
+	if ValidateStatus(v, apt.Status, status); !v.Valid() {
 		jsonutil.FailedValidationResponse(w, v.Errors)
 		return
 	}
 
-	provider, err := h.userStore.GetByID(r.Context(), input.ProviderID)
-	if err != nil {
-		switch {
-		case errors.Is(err, user.ErrUserNotFound):
-			jsonutil.BadRequestResponse(w, err)
-		default:
-			jsonutil.ServerErrorResponse(w, r, err, h.logger)
-		}
-		return
-	}
-	if provider.Role != user.RoleProvider {
-		v.AddError("provider_id", "invalid provider role")
-		jsonutil.FailedValidationResponse(w, v.Errors)
-		return
-	}
+	apt.Status = status
 
-	apt := &Appointment{
-		ClientID:    u.ID,
-		ProviderID:  provider.ID,
-		Title:       input.Title,
-		Description: input.Description,
-		StartsAt:    input.StartsAt,
-		EndsAt:      input.EndsAt,
-		Status:      StatusScheduled,
-	}
-
-	if ValidateAppointment(v, apt); !v.Valid() {
-		jsonutil.FailedValidationResponse(w, v.Errors)
-		return
-	}
-
-	err = h.store.Insert(r.Context(), apt)
-	if err != nil {
-		jsonutil.ServerErrorResponse(w, r, err, h.logger)
-		return
-	}
-
-	err = jsonutil.WriteJSON(w, http.StatusCreated, apt, nil)
-	if err != nil {
-		jsonutil.ServerErrorResponse(w, r, err, h.logger)
-		return
-	}
+	h.updateAppointment(w, r, apt)
 }
 
-func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
-	id, err := jsonutil.ReadIDParam(r)
-	if err != nil {
-		jsonutil.ServerErrorResponse(w, r, err, h.logger)
+func (h *Handler) updateData(w http.ResponseWriter, r *http.Request) {
+	apt, ok := h.getAppointment(w, r)
+	if !ok {
 		return
 	}
-
-	apt, err := h.store.GetByID(r.Context(), id)
-	if err != nil {
-		switch {
-		case errors.Is(err, ErrAppointmentNotFound):
-			jsonutil.NotFoundResponse(w)
-		default:
-			jsonutil.ServerErrorResponse(w, r, err, h.logger)
-		}
-		return
-	}
-
 	var input struct {
 		ProviderID  *int64     `json:"provider_id"`
 		Title       *string    `json:"title"`
@@ -169,7 +66,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		EndsAt      *time.Time `json:"ends_at"`
 	}
 
-	err = jsonutil.ReadJSON(w, r, &input)
+	err := jsonutil.ReadJSON(w, r, &input)
 	if err != nil {
 		jsonutil.BadRequestResponse(w, err)
 		return
@@ -202,7 +99,11 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.store.Update(r.Context(), apt)
+	h.updateAppointment(w, r, apt)
+}
+
+func (h *Handler) updateAppointment(w http.ResponseWriter, r *http.Request, apt *Appointment) {
+	err := h.store.Update(r.Context(), apt)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrEditConflict):
@@ -213,8 +114,56 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = jsonutil.WriteJSON(w, http.StatusCreated, apt, nil)
+	err = jsonutil.WriteJSON(w, http.StatusOK, apt, nil)
 	if err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
+	}
+}
+
+func (h *Handler) getAppointment(w http.ResponseWriter, r *http.Request) (*Appointment, bool) {
+	id, err := jsonutil.ReadIDParam(r)
+	if err != nil {
+		jsonutil.BadRequestResponse(w, err)
+		return nil, false
+	}
+
+	apt, err := h.store.GetByID(r.Context(), id)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrAppointmentNotFound):
+			jsonutil.NotFoundResponse(w)
+		default:
+			jsonutil.ServerErrorResponse(w, r, err, h.logger)
+		}
+		return nil, false
+	}
+
+	ok := h.checkAccessByContext(r, apt)
+	if !ok {
+		jsonutil.NotFoundResponse(w)
+		return nil, false
+	}
+
+	return apt, true
+}
+
+func (h *Handler) checkAccessByContext(r *http.Request, apt *Appointment) bool {
+	u := user.GetUserContext(r)
+	switch {
+	case u.Role == user.RoleClient && apt.ClientID == u.ID:
+		return true
+	case u.Role == user.RoleProvider && apt.ProviderID == u.ID:
+		return true
+	case u.Role == user.RoleAdmin:
+		return true
+	default:
+		h.logger.Warn("unauthorized appointment access attempt",
+			"user_id", u.ID,
+			"user_role", u.Role,
+			"appointment_id", apt.ID,
+			"appointment_client", apt.ClientID,
+			"appointment_provider", apt.ProviderID,
+		)
+		return false
 	}
 }

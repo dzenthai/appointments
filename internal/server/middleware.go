@@ -84,7 +84,6 @@ func (s *Server) requireAuthentication(next http.HandlerFunc) http.HandlerFunc {
 func (s *Server) requireVerification(next http.HandlerFunc) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		u := user.GetUserContext(r)
-
 		if !u.Verified {
 			jsonutil.VerificationRequireResponse(w)
 			return
@@ -94,4 +93,19 @@ func (s *Server) requireVerification(next http.HandlerFunc) http.HandlerFunc {
 	}
 
 	return s.requireAuthentication(fn)
+}
+
+func (s *Server) requireRole(role user.Role, next http.HandlerFunc) http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		u := user.GetUserContext(r)
+
+		if u.Role != role {
+			jsonutil.InvalidCredentialsResponse(w)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
+
+	return s.requireVerification(fn)
 }

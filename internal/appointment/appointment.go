@@ -50,6 +50,22 @@ func ValidateAppointment(v *validator.Validator, apt *Appointment) {
 	v.Check(apt.EndsAt.After(apt.StartsAt), "ends_at", "ends at must be greater that starts at")
 }
 
+func ValidateStatus(v *validator.Validator, from, to Status) {
+	v.Check(canTransition(from, to), "status", "invalid status transition")
+}
+
+func canTransition(from, to Status) bool {
+	switch from {
+	case StatusScheduled:
+		return to == StatusConfirmed || to == StatusCancelled
+	case StatusConfirmed:
+		return to == StatusCompleted || to == StatusCancelled
+	case StatusCompleted, StatusCancelled:
+		return false
+	}
+	return false
+}
+
 func (s *Store) GetByID(ctx context.Context, id int64) (*Appointment, error) {
 	query :=
 		`SELECT id, client_id, provider_id, title, description, starts_at, ends_at, status, created_at, updated_at, version
