@@ -91,8 +91,8 @@ func ValidateUser(v *validator.Validator, user User) {
 	v.Check(user.FirstName != "", "first_name", "must be provided")
 	v.Check(user.SecondName != "", "second_name", "must be provided")
 
-	v.Check(len(user.FirstName) <= 500, "first_name", "must not be more than 500 bytes long")
-	v.Check(len(user.SecondName) <= 500, "second_name", "must not be more than 500 bytes long")
+	v.Check(len(user.FirstName) <= 64, "first_name", "must not be more than 64 bytes long")
+	v.Check(len(user.SecondName) <= 64, "second_name", "must not be more than 64 bytes long")
 
 	ValidateEmail(v, user.Email)
 

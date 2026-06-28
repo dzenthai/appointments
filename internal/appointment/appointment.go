@@ -45,6 +45,8 @@ func NewStore(db *sql.DB) *Store {
 }
 
 func ValidateAppointment(v *validator.Validator, apt *Appointment) {
+	v.Check(len(apt.Title) <= 32, "title", "must not be more than 32 bytes long")
+	v.Check(len(apt.Description) <= 256, "title", "must not be more than 256 bytes long")
 	v.Check(apt.ClientID != apt.ProviderID, "client_id", "client ID must not match provider ID")
 	v.Check(apt.Title != "", "title", "must be provided")
 	v.Check(apt.EndsAt.After(apt.StartsAt), "ends_at", "ends at must be greater that starts at")
@@ -139,7 +141,7 @@ func (s *Store) Update(ctx context.Context, apt *Appointment) error {
 		    updated_at = now(),
 		    version = version + 1
 		WHERE id = $7 AND version = $8 
-		RETURNING client_id, provider_id, created_at, updated_at, version`
+		RETURNING provider_id, created_at, updated_at, version`
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
@@ -147,7 +149,6 @@ func (s *Store) Update(ctx context.Context, apt *Appointment) error {
 	args := []any{apt.ProviderID, apt.Title, apt.Description, apt.StartsAt, apt.EndsAt, apt.Status, apt.ID, apt.Version}
 
 	err := s.db.QueryRowContext(ctx, query, args...).Scan(
-		&apt.ClientID,
 		&apt.ProviderID,
 		&apt.CreatedAt,
 		&apt.UpdatedAt,

@@ -59,7 +59,6 @@ func (h *Handler) updateData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var input struct {
-		ProviderID  *int64     `json:"provider_id"`
 		Title       *string    `json:"title"`
 		Description *string    `json:"description"`
 		StartsAt    *time.Time `json:"starts_at"`
@@ -70,10 +69,6 @@ func (h *Handler) updateData(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		jsonutil.BadRequestResponse(w, err)
 		return
-	}
-
-	if input.ProviderID != nil {
-		apt.ProviderID = *input.ProviderID
 	}
 
 	if input.Title != nil {
@@ -92,12 +87,20 @@ func (h *Handler) updateData(w http.ResponseWriter, r *http.Request) {
 		apt.EndsAt = *input.EndsAt
 	}
 
+	status := StatusScheduled
+
 	v := validator.New()
 
-	if ValidateAppointment(v, apt); !v.Valid() {
+	ValidateStatus(v, apt.Status, status)
+
+	ValidateAppointment(v, apt)
+
+	if !v.Valid() {
 		jsonutil.FailedValidationResponse(w, v.Errors)
 		return
 	}
+
+	apt.Status = status
 
 	h.updateAppointment(w, r, apt)
 }
