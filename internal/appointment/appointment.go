@@ -59,9 +59,9 @@ func ValidateStatus(v *validator.Validator, from, to Status) {
 func canTransition(from, to Status) bool {
 	switch from {
 	case StatusScheduled:
-		return to == StatusConfirmed || to == StatusCancelled
+		return to == StatusConfirmed || to == StatusCancelled || to == StatusScheduled
 	case StatusConfirmed:
-		return to == StatusCompleted || to == StatusCancelled
+		return to == StatusCompleted || to == StatusCancelled || to == StatusScheduled
 	case StatusCompleted, StatusCancelled:
 		return false
 	}
