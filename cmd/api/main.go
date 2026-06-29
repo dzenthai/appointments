@@ -35,7 +35,7 @@ func run() error {
 		return err
 	}
 
-	_ = db.Close()
+	defer db.Close()
 
 	m := mailer.New(cfg.Resend.APIKey, cfg.Resend.Sender, logger)
 

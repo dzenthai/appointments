@@ -3,6 +3,7 @@ package config
 import (
 	"appointments/internal/env"
 	"flag"
+	"strings"
 )
 
 type Config struct {
@@ -10,9 +11,10 @@ type Config struct {
 	Env          string
 	VryTokenTTL  string
 	AuthTokenTTL string
-	DB
-	Cache
-	Resend
+	DB           DB
+	Cache        Cache
+	Resend       Resend
+	CORS         CORS
 }
 
 type DB struct {
@@ -31,6 +33,10 @@ type Resend struct {
 	Sender string
 }
 
+type CORS struct {
+	Origins []string
+}
+
 func Load() Config {
 	var cfg Config
 	flag.IntVar(&cfg.Port, "port", env.GetInt("PORT", 4000), "server port")
@@ -44,6 +50,10 @@ func Load() Config {
 	flag.StringVar(&cfg.AuthTokenTTL, "auth-token-ttl", env.GetString("AUTH_TOKEN_TTL", "24h"), "time to live of authentication token")
 	flag.StringVar(&cfg.Resend.APIKey, "resend-api-key", env.GetString("RESEND_API_KEY", "-"), "resend api key")
 	flag.StringVar(&cfg.Resend.Sender, "resend-sender", env.GetString("RESEND_SENDER", "-"), "resend sender")
+	flag.Func("cors-origins", "CORS trusted origins", func(s string) error {
+		cfg.CORS.Origins = strings.Fields(s)
+		return nil
+	})
 	flag.Parse()
 
 	return cfg

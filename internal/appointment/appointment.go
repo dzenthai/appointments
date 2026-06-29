@@ -91,7 +91,7 @@ func (s *Store) GetAll(ctx context.Context, userID int64, userRole user.Role, f 
 		return nil, err
 	}
 
-	_ = rows.Close()
+	defer rows.Close()
 
 	apts := make([]Appointment, 0)
 
