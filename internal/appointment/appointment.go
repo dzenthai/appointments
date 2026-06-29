@@ -1,10 +1,13 @@
 package appointment
 
 import (
+	"appointments/internal/filters"
+	"appointments/internal/user"
 	"appointments/internal/validator"
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -66,6 +69,59 @@ func canTransition(from, to Status) bool {
 		return false
 	}
 	return false
+}
+
+func (s *Store) GetAll(ctx context.Context, userID int64, userRole user.Role, f *filters.Filters) ([]Appointment, error) {
+	query := fmt.Sprintf(
+		`SELECT id, client_id, provider_id, title, description, starts_at, ends_at, status, created_at, updated_at, version
+       	FROM appointments
+       	WHERE (client_id = $1 AND $2 = 'client')
+		OR (provider_id = $1 AND $2 = 'provider')
+		ORDER BY %s %s
+		LIMIT $3 OFFSET $4`,
+		f.SortColumn(), f.SortDirection())
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
+	defer cancel()
+
+	args := []any{userID, userRole, f.Limit(), f.Offset()}
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = rows.Close()
+
+	apts := make([]Appointment, 0)
+
+	for rows.Next() {
+		var apt Appointment
+		err = rows.Scan(
+			&apt.ID,
+			&apt.ClientID,
+			&apt.ProviderID,
+			&apt.Title,
+			&apt.Description,
+			&apt.StartsAt,
+			&apt.EndsAt,
+			&apt.Status,
+			&apt.CreatedAt,
+			&apt.UpdatedAt,
+			&apt.Version,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		apts = append(apts, apt)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return apts, nil
 }
 
 func (s *Store) GetByID(ctx context.Context, id int64) (*Appointment, error) {

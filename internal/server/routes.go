@@ -16,6 +16,8 @@ func (s *Server) routes() http.Handler {
 
 	mux.HandleFunc("GET /v1/appointments/{id}", s.requireAuthentication(s.appHandler.Show))
 
+	mux.HandleFunc("GET /v1/appointments", s.requireVerification(s.appHandler.List))
+
 	mux.HandleFunc("POST /v1/appointments", s.requireRole(user.RoleClient, s.appHandler.Create))
 	mux.HandleFunc("PATCH /v1/appointments/{id}", s.requireRole(user.RoleClient, s.appHandler.Update))
 	mux.HandleFunc("PATCH /v1/appointments/{id}/cancel", s.requireRole(user.RoleClient, s.appHandler.Cancel))

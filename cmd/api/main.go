@@ -8,7 +8,6 @@ import (
 	"appointments/internal/server"
 	"appointments/internal/store"
 	"appointments/internal/user"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"os"
@@ -35,9 +34,8 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer func(db *sql.DB) {
-		_ = db.Close()
-	}(db)
+
+	_ = db.Close()
 
 	m := mailer.New(cfg.Resend.APIKey, cfg.Resend.Sender, logger)
 

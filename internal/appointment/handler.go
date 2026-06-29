@@ -1,6 +1,7 @@
 package appointment
 
 import (
+	"appointments/internal/filters"
 	"appointments/internal/jsonutil"
 	"appointments/internal/user"
 	"appointments/internal/validator"
@@ -21,6 +22,34 @@ func NewHandler(store *Store, userStore *user.Store, logger *slog.Logger) *Handl
 		store:     store,
 		userStore: userStore,
 		logger:    logger,
+	}
+}
+
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+
+	qs := r.URL.Query()
+
+	v := validator.New()
+
+	fs := &filters.Filters{
+		Page:         jsonutil.ReadInt(qs, "page", 1, v),
+		PageSize:     jsonutil.ReadInt(qs, "page_size", 20, v),
+		Sort:         jsonutil.ReadString(qs, "sort", "title"),
+		SortSafeList: []string{"title", "-title", "starts_at", "-starts_at", "ends_at", "-ends_at", "status", "-status"},
+	}
+
+	u := user.GetUserContext(r)
+
+	apts, err := h.store.GetAll(r.Context(), u.ID, u.Role, fs)
+	if err != nil {
+		jsonutil.ServerErrorResponse(w, r, err, h.logger)
+		return
+	}
+
+	err = jsonutil.WriteJSON(w, http.StatusOK, apts, nil)
+	if err != nil {
+		jsonutil.ServerErrorResponse(w, r, err, h.logger)
+		return
 	}
 }
 
