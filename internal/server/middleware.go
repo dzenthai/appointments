@@ -67,43 +67,48 @@ func (s *Server) rateLimiter(next http.Handler) http.Handler {
 	}
 	var (
 		mu      sync.Mutex
-		clients map[string]*client
+		clients = make(map[string]*client)
 	)
 	strategy, err := realclientip.NewRightmostTrustedCountStrategy("X-Forwarded-For", 2)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to init ip strategy: %w", err))
 	}
 	if s.cfg.RateLimiter.Enabled {
 		go func() {
-			time.Sleep(time.Minute)
+			for {
+				time.Sleep(time.Minute)
 
-			mu.Lock()
-			defer mu.Lock()
+				mu.Lock()
 
-			for ip, cl := range clients {
-				if time.Since(cl.lastSeen) > time.Minute*3 {
-					delete(clients, ip)
+				for ip, cl := range clients {
+					if time.Since(cl.lastSeen) > time.Minute*3 {
+						delete(clients, ip)
+					}
 				}
+
+				mu.Unlock()
 			}
 		}()
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if s.cfg.RateLimiter.Enabled {
-			clientIP := strategy.ClientIP(r.Header, r.RemoteAddr)
+			ip := strategy.ClientIP(r.Header, r.RemoteAddr)
 
 			mu.Lock()
 
-			if _, exist := clients[clientIP]; !exist {
-				limit := 2.0
-				burst := 4
-				clients[clientIP] = &client{
-					limiter: rate.NewLimiter(rate.Limit(limit), burst),
+			cl, exist := clients[ip]
+			if !exist {
+				rps := s.cfg.RateLimiter.RPS
+				burst := s.cfg.RateLimiter.Burst
+				cl = &client{
+					limiter: rate.NewLimiter(rate.Limit(rps), burst),
 				}
+				clients[ip] = cl
 			}
 
-			clients[clientIP].lastSeen = time.Now()
+			cl.lastSeen = time.Now()
 
-			if !clients[clientIP].limiter.Allow() {
+			if !cl.limiter.Allow() {
 				mu.Unlock()
 				jsonutil.LimitExceededResponse(w)
 				return
