@@ -7,6 +7,7 @@ import (
 	"appointments/internal/validator"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -16,12 +17,44 @@ import (
 	"golang.org/x/time/rate"
 )
 
+type recorder struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (r *recorder) WriteHeader(code int) {
+	r.statusCode = code
+	r.ResponseWriter.WriteHeader(code)
+}
+
 func (s *Server) logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		starts := time.Now()
 
-		s.logger.Info("processing request", "method", r.Method, "uri", r.RequestURI, "timestamp", time.Now())
+		rec := &recorder{
+			ResponseWriter: w,
+			statusCode:     http.StatusOK,
+		}
 
-		next.ServeHTTP(w, r)
+		status := rec.statusCode
+
+		next.ServeHTTP(rec, r)
+
+		args := []any{
+			slog.String("method", r.Method),
+			slog.String("uri", r.RequestURI),
+			slog.Int("status_code", status),
+			slog.Duration("duration", time.Since(starts))}
+
+		switch {
+		case status >= 500:
+			s.logger.Error("request handled", args...)
+		case status >= 400:
+			s.logger.Error("request handled", args...)
+		default:
+			s.logger.Info("request handled", args...)
+
+		}
 	})
 }
 
