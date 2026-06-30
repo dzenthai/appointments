@@ -2,6 +2,7 @@ package appointment
 
 import (
 	"appointments/internal/filters"
+	"appointments/internal/httputil"
 	"appointments/internal/jsonutil"
 	"appointments/internal/user"
 	"appointments/internal/validator"
@@ -32,9 +33,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	v := validator.New()
 
 	fs := filters.Filters{
-		Page:         jsonutil.ReadInt(qs, "page", 1, v),
-		PageSize:     jsonutil.ReadInt(qs, "page_size", 20, v),
-		Sort:         jsonutil.ReadString(qs, "sort", "title"),
+		Page:         httputil.ReadInt(qs, "page", 1, v),
+		PageSize:     httputil.ReadInt(qs, "page_size", 20, v),
+		Sort:         httputil.ReadString(qs, "sort", "title"),
 		SortSafeList: []string{"title", "-title", "starts_at", "-starts_at", "ends_at", "-ends_at", "status", "-status"},
 	}
 

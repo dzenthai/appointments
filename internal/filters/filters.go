@@ -14,13 +14,16 @@ type Filters struct {
 
 func ValidateFilters(v *validator.Validator, f Filters) {
 	v.Check(checkSortBySafeList(f), "sort", "invalid sort value")
-	v.Check(f.PageSize <= 100, "page_size", "must be less than 100 bytes")
-	v.Check(f.Page > 0, "page", "must be greater than 0 bytes")
+	v.Check(f.PageSize <= 100, "page_size", "must be less than 100")
+	v.Check(f.PageSize > 0, "page_size", "must be greater than zero")
+	v.Check(f.Page > 0, "page", "must be greater than zero")
 }
 
 func checkSortBySafeList(f Filters) bool {
 	for _, safeValue := range f.SortSafeList {
-		return safeValue == f.Sort
+		if f.Sort == safeValue {
+			return true
+		}
 	}
 	return false
 }
@@ -39,7 +42,7 @@ func (f Filters) SortColumn() string {
 			return strings.TrimPrefix(f.Sort, "-")
 		}
 	}
-	return "created_at"
+	panic("unsafe sort parameter: " + f.Sort)
 }
 
 func (f Filters) SortDirection() string {
