@@ -36,9 +36,9 @@ func (s *Server) logRequest(next http.Handler) http.Handler {
 			statusCode:     http.StatusOK,
 		}
 
-		status := rec.statusCode
-
 		next.ServeHTTP(rec, r)
+		
+		status := rec.statusCode
 
 		args := []any{
 			slog.String("method", r.Method),
