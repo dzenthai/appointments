@@ -51,6 +51,7 @@ func ValidateAppointment(v *validator.Validator, apt *Appointment) {
 	v.Check(len(apt.Description) <= 256, "title", "must not be more than 256 bytes long")
 	v.Check(apt.ClientID != apt.ProviderID, "client_id", "client ID must not match provider ID")
 	v.Check(apt.Title != "", "title", "must be provided")
+	v.Check(apt.StartsAt.After(time.Now()), "starts_at", "starts at must be greater that now")
 	v.Check(apt.EndsAt.After(apt.StartsAt), "ends_at", "ends at must be greater that starts at")
 }
 
