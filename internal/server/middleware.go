@@ -37,7 +37,7 @@ func (s *Server) logRequest(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(rec, r)
-		
+
 		status := rec.statusCode
 
 		args := []any{
@@ -50,7 +50,7 @@ func (s *Server) logRequest(next http.Handler) http.Handler {
 		case status >= 500:
 			s.logger.Error("request handled", args...)
 		case status >= 400:
-			s.logger.Error("request handled", args...)
+			s.logger.Warn("request handled", args...)
 		default:
 			s.logger.Info("request handled", args...)
 
