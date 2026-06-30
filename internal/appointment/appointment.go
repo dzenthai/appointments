@@ -2,7 +2,6 @@ package appointment
 
 import (
 	"appointments/internal/filters"
-	"appointments/internal/user"
 	"appointments/internal/validator"
 	"context"
 	"database/sql"
@@ -71,20 +70,35 @@ func canTransition(from, to Status) bool {
 	return false
 }
 
-func (s *Store) GetAll(ctx context.Context, userID int64, userRole user.Role, f *filters.Filters) ([]Appointment, error) {
+func (s *Store) GetAllByClient(ctx context.Context, userID int64, f filters.Filters) ([]Appointment, error) {
 	query := fmt.Sprintf(
 		`SELECT id, client_id, provider_id, title, description, starts_at, ends_at, status, created_at, updated_at, version
        	FROM appointments
-       	WHERE (client_id = $1 AND $2 = 'client')
-		OR (provider_id = $1 AND $2 = 'provider')
+       	WHERE client_id = $1 
 		ORDER BY %s %s
-		LIMIT $3 OFFSET $4`,
+		LIMIT $2 OFFSET $3`,
 		f.SortColumn(), f.SortDirection())
 
+	return s.queryAppointments(ctx, query, userID, f)
+}
+
+func (s *Store) GetAllByProvider(ctx context.Context, userID int64, f filters.Filters) ([]Appointment, error) {
+	query := fmt.Sprintf(
+		`SELECT id, client_id, provider_id, title, description, starts_at, ends_at, status, created_at, updated_at, version
+       	FROM appointments
+       	WHERE provider_id = $1 
+		ORDER BY %s %s
+		LIMIT $2 OFFSET $3`,
+		f.SortColumn(), f.SortDirection())
+
+	return s.queryAppointments(ctx, query, userID, f)
+}
+
+func (s *Store) queryAppointments(ctx context.Context, query string, userID int64, f filters.Filters) ([]Appointment, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
-	args := []any{userID, userRole, f.Limit(), f.Offset()}
+	args := []any{userID, f.Limit(), f.Offset()}
 
 	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {

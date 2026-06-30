@@ -31,16 +31,33 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	v := validator.New()
 
-	fs := &filters.Filters{
+	fs := filters.Filters{
 		Page:         jsonutil.ReadInt(qs, "page", 1, v),
 		PageSize:     jsonutil.ReadInt(qs, "page_size", 20, v),
 		Sort:         jsonutil.ReadString(qs, "sort", "title"),
 		SortSafeList: []string{"title", "-title", "starts_at", "-starts_at", "ends_at", "-ends_at", "status", "-status"},
 	}
 
+	if filters.ValidateFilters(v, fs); !v.Valid() {
+		jsonutil.FailedValidationResponse(w, v.Errors)
+		return
+	}
+
 	u := user.GetUserContext(r)
 
-	apts, err := h.store.GetAll(r.Context(), u.ID, u.Role, fs)
+	var apts []Appointment
+	var err error
+
+	switch u.Role {
+	case user.RoleClient:
+		apts, err = h.store.GetAllByClient(r.Context(), u.ID, fs)
+	case user.RoleProvider:
+		apts, err = h.store.GetAllByProvider(r.Context(), u.ID, fs)
+	default:
+		jsonutil.NotFoundResponse(w)
+		return
+	}
+
 	if err != nil {
 		jsonutil.ServerErrorResponse(w, r, err, h.logger)
 		return
