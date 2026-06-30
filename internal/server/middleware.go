@@ -9,6 +9,11 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
+
+	"github.com/realclientip/realclientip-go"
+	"golang.org/x/time/rate"
 )
 
 func (s *Server) enableCORS(next http.Handler) http.Handler {
@@ -50,6 +55,62 @@ func (s *Server) recoverPanic(next http.Handler) http.Handler {
 				jsonutil.ServerErrorResponse(w, r, fmt.Errorf("%v", err), s.logger)
 			}
 		}()
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) rateLimiter(next http.Handler) http.Handler {
+	type client struct {
+		limiter  *rate.Limiter
+		lastSeen time.Time
+	}
+	var (
+		mu      sync.Mutex
+		clients map[string]*client
+	)
+	strategy, err := realclientip.NewRightmostTrustedCountStrategy("X-Forwarded-For", 2)
+	if err != nil {
+		panic(err)
+	}
+	if s.cfg.RateLimiter.Enabled {
+		go func() {
+			time.Sleep(time.Minute)
+
+			mu.Lock()
+			defer mu.Lock()
+
+			for ip, cl := range clients {
+				if time.Since(cl.lastSeen) > time.Minute*3 {
+					delete(clients, ip)
+				}
+			}
+		}()
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.cfg.RateLimiter.Enabled {
+			clientIP := strategy.ClientIP(r.Header, r.RemoteAddr)
+
+			mu.Lock()
+
+			if _, exist := clients[clientIP]; !exist {
+				limit := 2.0
+				burst := 4
+				clients[clientIP] = &client{
+					limiter: rate.NewLimiter(rate.Limit(limit), burst),
+				}
+			}
+
+			clients[clientIP].lastSeen = time.Now()
+
+			if !clients[clientIP].limiter.Allow() {
+				mu.Unlock()
+				jsonutil.LimitExceededResponse(w)
+				return
+			}
+
+			mu.Unlock()
+		}
 
 		next.ServeHTTP(w, r)
 	})

@@ -62,3 +62,8 @@ func NotFoundResponse(w http.ResponseWriter) {
 	message := "not found"
 	errorResponse(w, http.StatusNotFound, message)
 }
+
+func LimitExceededResponse(w http.ResponseWriter) {
+	message := "too many requests, limit exceeded"
+	errorResponse(w, http.StatusTooManyRequests, message)
+}

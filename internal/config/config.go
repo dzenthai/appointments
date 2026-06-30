@@ -15,6 +15,7 @@ type Config struct {
 	Cache        Cache
 	Resend       Resend
 	CORS         CORS
+	RateLimiter  RateLimiter
 }
 
 type DB struct {
@@ -37,6 +38,12 @@ type CORS struct {
 	Origins []string
 }
 
+type RateLimiter struct {
+	Enabled bool
+	RPS     float64
+	Burst   int
+}
+
 func Load() Config {
 	var cfg Config
 	flag.IntVar(&cfg.Port, "port", env.GetInt("PORT", 4000), "server port")
@@ -54,6 +61,9 @@ func Load() Config {
 		cfg.CORS.Origins = strings.Fields(s)
 		return nil
 	})
+	flag.BoolVar(&cfg.RateLimiter.Enabled, "rate-limiter-enabled", env.GetBool("LIMITER_ENABLED", true), "enable rate limiter")
+	flag.Float64Var(&cfg.RateLimiter.RPS, "rate-limiter-rps", env.GetFloat("LIMITER_RPS", 2.0), "count number of max requests per second")
+	flag.IntVar(&cfg.RateLimiter.Burst, "rate-limiter-burst", env.GetInt("LIMITER_BURST", 4), "count number of max burst")
 	flag.Parse()
 
 	return cfg

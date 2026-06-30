@@ -47,8 +47,8 @@ func NewStore(db *sql.DB) *Store {
 }
 
 func ValidateAppointment(v *validator.Validator, apt *Appointment) {
-	v.Check(len(apt.Title) <= 32, "title", "must not be more than 32 bytes long")
-	v.Check(len(apt.Description) <= 256, "title", "must not be more than 256 bytes long")
+	v.Check(len(apt.Title) <= 32, "title", "must not be more than 32 chars long")
+	v.Check(len(apt.Description) <= 256, "description", "must not be more than 256 chars long")
 	v.Check(apt.ClientID != apt.ProviderID, "client_id", "client ID must not match provider ID")
 	v.Check(apt.Title != "", "title", "must be provided")
 	v.Check(apt.StartsAt.After(time.Now()), "starts_at", "starts at must be greater that now")
