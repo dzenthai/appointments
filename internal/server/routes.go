@@ -24,5 +24,5 @@ func (s *Server) routes() http.Handler {
 
 	mux.HandleFunc("PATCH /v1/appointments/{id}/confirm", s.requireRole(user.RoleProvider, s.appHandler.Confirm))
 
-	return s.recoverPanic(s.enableCORS(s.rateLimiter(s.authenticate(mux))))
+	return s.recoverPanic(s.logRequest(s.enableCORS(s.rateLimiter(s.authenticate(mux)))))
 }

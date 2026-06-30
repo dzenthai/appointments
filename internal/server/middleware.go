@@ -16,6 +16,15 @@ import (
 	"golang.org/x/time/rate"
 )
 
+func (s *Server) logRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		s.logger.Info("processing request", "method", r.Method, "uri", r.RequestURI, "timestamp", time.Now())
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (s *Server) enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Vary", "Origin")
