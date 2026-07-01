@@ -17,28 +17,28 @@ import (
 	"golang.org/x/time/rate"
 )
 
-type recorder struct {
+type CustomWriter struct {
 	http.ResponseWriter
 	statusCode int
 }
 
-func (r *recorder) WriteHeader(code int) {
-	r.statusCode = code
-	r.ResponseWriter.WriteHeader(code)
+func (cw *CustomWriter) WriteHeader(code int) {
+	cw.statusCode = code
+	cw.ResponseWriter.WriteHeader(code)
 }
 
 func (s *Server) logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		starts := time.Now()
 
-		rec := &recorder{
+		cw := &CustomWriter{
 			ResponseWriter: w,
 			statusCode:     http.StatusOK,
 		}
 
-		next.ServeHTTP(rec, r)
+		next.ServeHTTP(cw, r)
 
-		status := rec.statusCode
+		status := cw.statusCode
 
 		args := []any{
 			slog.String("method", r.Method),
