@@ -38,7 +38,7 @@ func FailedValidationResponse(w http.ResponseWriter, errors map[string]string) {
 }
 
 func InvalidAuthenticationTokenResponse(w http.ResponseWriter, r *http.Request) {
-	r.Header.Set("WWW-Authenticate", "Bearer")
+	w.Header().Set("WWW-Authenticate", "Bearer")
 	message := "invalid or missing authentication token"
 	errorResponse(w, http.StatusUnauthorized, message)
 }
@@ -49,12 +49,12 @@ func InvalidCredentialsResponse(w http.ResponseWriter) {
 }
 
 func AuthenticationRequireResponse(w http.ResponseWriter) {
-	message := "authentication require"
+	message := "authentication required"
 	errorResponse(w, http.StatusUnauthorized, message)
 }
 
 func VerificationRequireResponse(w http.ResponseWriter) {
-	message := "verification require"
+	message := "verification required"
 	errorResponse(w, http.StatusForbidden, message)
 }
 

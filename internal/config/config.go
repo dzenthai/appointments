@@ -12,7 +12,6 @@ type Config struct {
 	VryTokenTTL  string
 	AuthTokenTTL string
 	DB           DB
-	Cache        Cache
 	Resend       Resend
 	CORS         CORS
 	RateLimiter  RateLimiter
@@ -23,10 +22,6 @@ type DB struct {
 	MaxOpenConns int
 	MaxIdleConns int
 	MaxIdleTime  string
-}
-
-type Cache struct {
-	URL string
 }
 
 type Resend struct {
