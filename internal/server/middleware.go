@@ -177,7 +177,7 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 
 		headerParts := strings.Split(header, " ")
 		if len(headerParts) != 2 || headerParts[0] != "Bearer" {
-			jsonutil.InvalidAuthenticationTokenResponse(w, r)
+			jsonutil.InvalidAuthenticationTokenResponse(w)
 			return
 		}
 
@@ -194,7 +194,7 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 		if err != nil {
 			switch {
 			case errors.Is(err, user.ErrUserNotFound):
-				jsonutil.InvalidAuthenticationTokenResponse(w, r)
+				jsonutil.InvalidAuthenticationTokenResponse(w)
 			default:
 				jsonutil.ServerErrorResponse(w, r, err, s.logger)
 			}
