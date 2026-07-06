@@ -39,3 +39,43 @@ func TestOffset(t *testing.T) {
 		})
 	}
 }
+
+func TestSortColumn(t *testing.T) {
+	tests := []struct {
+		name      string
+		filters   Filters
+		want      string
+		wantPanic bool
+	}{
+		{name: "valid_sort", filters: Filters{Sort: "title", SortSafeList: buildSafeList()}, want: "title"},
+		{name: "desc_sort_trims_minus", filters: Filters{Sort: "-title", SortSafeList: buildSafeList()}, want: "title"},
+		{name: "empty_safelist_panics", filters: Filters{Sort: "title"}, wantPanic: true},
+
+		{name: "unsafe_sort_panics", filters: Filters{Sort: "id; DROP TABLE", SortSafeList: buildSafeList()}, wantPanic: true},
+		{name: "unsafe_value_empty_safelist_panics", filters: Filters{Sort: "id; DROP TABLE"}, wantPanic: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				r := recover()
+				if tt.wantPanic && r == nil {
+					t.Error("expected panic, got none")
+				}
+				if !tt.wantPanic && r != nil {
+					t.Fatalf("unexpected panic: %v", r)
+				}
+			}()
+			assert.Equal(t, tt.filters.SortColumn(), tt.want)
+		})
+	}
+}
+
+func buildSafeList() []string {
+	return []string{
+		"title", "-title",
+		"starts_at", "-starts_at",
+		"ends_at", "-ends_at",
+		"status", "-status",
+	}
+}
