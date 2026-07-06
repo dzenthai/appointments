@@ -71,6 +71,23 @@ func TestSortColumn(t *testing.T) {
 	}
 }
 
+func TestSortDirection(t *testing.T) {
+	tests := []struct {
+		name    string
+		filters Filters
+		want    string
+	}{
+		{name: "asc_sort", filters: Filters{Sort: "title"}, want: "ASC"},
+		{name: "desc_sort", filters: Filters{Sort: "-title"}, want: "DESC"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.filters.SortDirection(), tt.want)
+		})
+	}
+}
+
 func buildSafeList() []string {
 	return []string{
 		"title", "-title",
