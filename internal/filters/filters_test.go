@@ -2,8 +2,67 @@ package filters
 
 import (
 	"appointments/internal/assert"
+	"appointments/internal/validator"
 	"testing"
 )
+
+func TestValidateFilters(t *testing.T) {
+	tests := []struct {
+		name       string
+		filters    Filters
+		wantErrKey string
+	}{
+		{name: "valid_filters", filters: Filters{
+			Page:         1,
+			PageSize:     20,
+			Sort:         "title",
+			SortSafeList: buildSafeList(),
+		}},
+		{name: "invalid_sort_value", filters: Filters{
+			Page:         1,
+			PageSize:     20,
+			Sort:         "id",
+			SortSafeList: buildSafeList(),
+		}, wantErrKey: "sort"},
+		{name: "max_valid_page_size", filters: Filters{
+			Page:         1,
+			PageSize:     100,
+			Sort:         "title",
+			SortSafeList: buildSafeList(),
+		}},
+		{name: "greater_max_page_size_value", filters: Filters{
+			Page:         1,
+			PageSize:     101,
+			Sort:         "title",
+			SortSafeList: buildSafeList(),
+		}, wantErrKey: "page_size"},
+		{name: "less_min_page_size_value", filters: Filters{
+			Page:         1,
+			PageSize:     0,
+			Sort:         "title",
+			SortSafeList: buildSafeList(),
+		}, wantErrKey: "page_size"},
+		{name: "less_min_page_value", filters: Filters{
+			Page:         0,
+			PageSize:     20,
+			Sort:         "title",
+			SortSafeList: buildSafeList(),
+		}, wantErrKey: "page"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := validator.New()
+			ValidateFilters(v, tt.filters)
+
+			if tt.wantErrKey != "" {
+				_, exist := v.Errors[tt.wantErrKey]
+				assert.Equal(t, exist, true)
+			}
+			assert.Equal(t, v.Valid(), tt.wantErrKey == "")
+		})
+	}
+}
 
 func TestLimit(t *testing.T) {
 	tests := []struct {
