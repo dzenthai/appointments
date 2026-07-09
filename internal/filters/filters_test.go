@@ -64,6 +64,37 @@ func TestValidateFilters(t *testing.T) {
 	}
 }
 
+func TestCheckSortBySafeList(t *testing.T) {
+	tests := []struct {
+		name    string
+		filters Filters
+		want    bool
+	}{
+		{name: "valid_sort_value", filters: Filters{
+			Sort:         "title",
+			SortSafeList: buildSafeList(),
+		}, want: true},
+		{name: "desc_sort_value", filters: Filters{
+			Sort:         "-title",
+			SortSafeList: buildSafeList(),
+		}, want: true},
+		{name: "invalid_sort_value", filters: Filters{
+			Sort:         "id",
+			SortSafeList: buildSafeList(),
+		}, want: false},
+		{name: "empty_safelist", filters: Filters{
+			Sort:         "title",
+			SortSafeList: nil,
+		}, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, checkSortBySafeList(tt.filters), tt.want)
+		})
+	}
+}
+
 func TestLimit(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -106,7 +137,7 @@ func TestSortColumn(t *testing.T) {
 		want      string
 		wantPanic bool
 	}{
-		{name: "valid_sort", filters: Filters{Sort: "title", SortSafeList: buildSafeList()}, want: "title"},
+		{name: "valid_sort_value", filters: Filters{Sort: "title", SortSafeList: buildSafeList()}, want: "title"},
 		{name: "desc_sort_trims_minus", filters: Filters{Sort: "-title", SortSafeList: buildSafeList()}, want: "title"},
 		{name: "empty_safelist_panics", filters: Filters{Sort: "title"}, wantPanic: true},
 
