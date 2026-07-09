@@ -56,8 +56,8 @@ func TestValidateFilters(t *testing.T) {
 			ValidateFilters(v, tt.filters)
 
 			if tt.wantErrKey != "" {
-				_, exist := v.Errors[tt.wantErrKey]
-				assert.Equal(t, exist, true)
+				_, exists := v.Errors[tt.wantErrKey]
+				assert.Equal(t, exists, true)
 			}
 			assert.Equal(t, v.Valid(), tt.wantErrKey == "")
 		})
