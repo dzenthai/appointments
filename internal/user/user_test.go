@@ -53,6 +53,28 @@ func TestPasswordSetAndMatches(t *testing.T) {
 	}
 }
 
+func TestValidatePassword(t *testing.T) {
+	tests := []struct {
+		name      string
+		plaintext string
+		valid     bool
+	}{
+		{name: "valid_plaintext", plaintext: "Str0NgP@55word", valid: true},
+		{name: "max_valid_plaintext", plaintext: strings.Repeat("a", 72), valid: true},
+		{name: "less_min_plaintext", plaintext: "abc123", valid: false},
+		{name: "greater_max_plaintext", plaintext: strings.Repeat("a", 73), valid: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := validator.New()
+			ValidatePassword(v, tt.plaintext)
+
+			assert.Equal(t, tt.valid, v.Valid())
+		})
+	}
+}
+
 func TestValidateUserAndEmail(t *testing.T) {
 	tests := []struct {
 		name       string
