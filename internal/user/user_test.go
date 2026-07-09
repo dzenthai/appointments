@@ -37,7 +37,7 @@ func TestPasswordSetAndMatches(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := new(password)
 			err := p.Set(tt.plaintext)
-			generationPasswordError(t, err)
+			assert.NilError(t, err)
 
 			match, err := p.Matches(tt.plaintext)
 			assert.NilError(t, err)
@@ -71,7 +71,7 @@ func TestValidatePassword(t *testing.T) {
 			v := validator.New()
 			ValidatePassword(v, tt.plaintext)
 
-			assert.Equal(t, tt.valid, v.Valid())
+			assert.Equal(t, v.Valid(), tt.valid)
 		})
 	}
 }
@@ -148,7 +148,7 @@ func TestValidateUserAndEmail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			v := validator.New()
 			err := tt.user.Password.Set("Str0NgP@55word")
-			generationPasswordError(t, err)
+			assert.NilError(t, err)
 
 			ValidateUser(v, *tt.user)
 
@@ -158,11 +158,5 @@ func TestValidateUserAndEmail(t *testing.T) {
 			}
 			assert.Equal(t, v.Valid(), tt.wantErrKey == "")
 		})
-	}
-}
-
-func generationPasswordError(t *testing.T, err error) {
-	if err != nil {
-		t.Fatalf("error while generating hash of password: %s", err.Error())
 	}
 }
