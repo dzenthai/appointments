@@ -2,8 +2,141 @@ package appointment
 
 import (
 	"appointments/internal/assert"
+	"appointments/internal/validator"
+	"strings"
 	"testing"
+	"time"
 )
+
+func TestValidateAppointment(t *testing.T) {
+	tests := []struct {
+		name        string
+		appointment *Appointment
+		wantErrKey  string
+	}{
+		{name: "valid_appointment", appointment: &Appointment{
+			ClientID:    1,
+			ProviderID:  2,
+			Title:       "title",
+			Description: "description",
+			StartsAt:    time.Now().Add(time.Hour * 24),
+			EndsAt:      time.Now().Add(time.Hour * 25),
+			Status:      StatusScheduled,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Version:     1,
+		}},
+		{name: "max_valid_title", appointment: &Appointment{
+			ClientID:    1,
+			ProviderID:  2,
+			Title:       strings.Repeat("a", 32),
+			Description: "description",
+			StartsAt:    time.Now().Add(time.Hour * 24),
+			EndsAt:      time.Now().Add(time.Hour * 25),
+			Status:      StatusScheduled,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Version:     2,
+		}},
+		{name: "greater_max_title", appointment: &Appointment{
+			ClientID:    1,
+			ProviderID:  2,
+			Title:       strings.Repeat("a", 33),
+			Description: "description",
+			StartsAt:    time.Now().Add(time.Hour * 24),
+			EndsAt:      time.Now().Add(time.Hour * 25),
+			Status:      StatusScheduled,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Version:     2,
+		}, wantErrKey: "title"},
+		{name: "empty_title", appointment: &Appointment{
+			ClientID:    1,
+			ProviderID:  2,
+			Title:       "",
+			Description: "description",
+			StartsAt:    time.Now().Add(time.Hour * 24),
+			EndsAt:      time.Now().Add(time.Hour * 25),
+			Status:      StatusScheduled,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Version:     2,
+		}, wantErrKey: "title"},
+		{name: "max_valid_description", appointment: &Appointment{
+			ClientID:    1,
+			ProviderID:  2,
+			Title:       "title",
+			Description: strings.Repeat("a", 256),
+			StartsAt:    time.Now().Add(time.Hour * 24),
+			EndsAt:      time.Now().Add(time.Hour * 25),
+			Status:      StatusScheduled,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Version:     2,
+		}},
+		{name: "greater_max_description", appointment: &Appointment{
+			ClientID:    1,
+			ProviderID:  2,
+			Title:       "title",
+			Description: strings.Repeat("a", 257),
+			StartsAt:    time.Now().Add(time.Hour * 24),
+			EndsAt:      time.Now().Add(time.Hour * 25),
+			Status:      StatusScheduled,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Version:     2,
+		}, wantErrKey: "description"},
+		{name: "client_id_matches_provider_id", appointment: &Appointment{
+			ClientID:    1,
+			ProviderID:  1,
+			Title:       "title",
+			Description: "description",
+			StartsAt:    time.Now().Add(time.Hour * 24),
+			EndsAt:      time.Now().Add(time.Hour * 25),
+			Status:      StatusScheduled,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Version:     2,
+		}, wantErrKey: "client_id"},
+		{name: "starts_at_less_or_equals_now", appointment: &Appointment{
+			ClientID:    1,
+			ProviderID:  2,
+			Title:       "title",
+			Description: "description",
+			StartsAt:    time.Now(),
+			EndsAt:      time.Now().Add(time.Hour * 25),
+			Status:      StatusScheduled,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Version:     2,
+		}, wantErrKey: "starts_at"},
+		{name: "ends_at_less_or_equals_starts_at", appointment: &Appointment{
+			ClientID:    1,
+			ProviderID:  2,
+			Title:       "title",
+			Description: "description",
+			StartsAt:    time.Now().Add(time.Hour * 24),
+			EndsAt:      time.Now().Add(time.Hour * 23),
+			Status:      StatusScheduled,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Version:     2,
+		}, wantErrKey: "ends_at"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := validator.New()
+			ValidateAppointment(v, tt.appointment)
+
+			if tt.wantErrKey != "" {
+				_, exists := v.Errors[tt.wantErrKey]
+				assert.Equal(t, exists, true)
+			}
+			assert.Equal(t, v.Valid(), tt.wantErrKey == "")
+		})
+	}
+}
 
 func TestCanTransition(t *testing.T) {
 	tests := []struct {

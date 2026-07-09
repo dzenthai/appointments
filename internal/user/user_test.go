@@ -60,6 +60,7 @@ func TestValidatePassword(t *testing.T) {
 		valid     bool
 	}{
 		{name: "valid_plaintext", plaintext: "Str0NgP@55word", valid: true},
+		{name: "empty_plaintext", plaintext: "", valid: false},
 		{name: "max_valid_plaintext", plaintext: strings.Repeat("a", 72), valid: true},
 		{name: "less_min_plaintext", plaintext: "abc123", valid: false},
 		{name: "greater_max_plaintext", plaintext: strings.Repeat("a", 73), valid: false},
