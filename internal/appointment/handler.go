@@ -6,6 +6,7 @@ import (
 	"appointments/internal/jsonutil"
 	"appointments/internal/user"
 	"appointments/internal/validator"
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -13,12 +14,20 @@ import (
 )
 
 type Handler struct {
-	store     *Store
+	store     appointmentStore
 	userStore *user.Store
 	logger    *slog.Logger
 }
 
-func NewHandler(store *Store, userStore *user.Store, logger *slog.Logger) *Handler {
+type appointmentStore interface {
+	GetAllByClient(ctx context.Context, userID int64, f filters.Filters) ([]Appointment, error)
+	GetAllByProvider(ctx context.Context, userID int64, f filters.Filters) ([]Appointment, error)
+	GetByID(ctx context.Context, id int64) (*Appointment, error)
+	Insert(ctx context.Context, apt *Appointment) error
+	Update(ctx context.Context, apt *Appointment) error
+}
+
+func NewHandler(store appointmentStore, userStore *user.Store, logger *slog.Logger) *Handler {
 	return &Handler{
 		store:     store,
 		userStore: userStore,
