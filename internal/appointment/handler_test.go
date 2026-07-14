@@ -164,3 +164,104 @@ func TestList(t *testing.T) {
 		})
 	}
 }
+
+func TestShow(t *testing.T) {
+
+	client := &user.User{
+		ID:         100,
+		FirstName:  "New",
+		SecondName: "User",
+		Email:      "user@test.com",
+		Role:       user.RoleClient,
+		Verified:   true,
+		CreatedAt:  time.Now(),
+		Version:    1,
+	}
+
+	provider := &user.User{
+		ID:         200,
+		FirstName:  "New",
+		SecondName: "Provider",
+		Email:      "provider@test.com",
+		Role:       user.RoleProvider,
+		Verified:   true,
+		CreatedAt:  time.Now(),
+		Version:    1,
+	}
+
+	admin := &user.User{
+		ID:         1,
+		FirstName:  "New",
+		SecondName: "Admin",
+		Email:      "admin@test.com",
+		Role:       user.RoleAdmin,
+		Verified:   true,
+		CreatedAt:  time.Now(),
+		Version:    1,
+	}
+
+	clientApt := &Appointment{
+		ID:          1,
+		ClientID:    100,
+		ProviderID:  200,
+		Title:       "first appointment",
+		Description: "description",
+		Status:      StatusScheduled,
+		Version:     1,
+	}
+
+	foreignApt := &Appointment{
+		ID:          2,
+		ClientID:    101,
+		ProviderID:  202,
+		Title:       "second appointment",
+		Description: "description",
+		Status:      StatusConfirmed,
+		Version:     1,
+	}
+
+	tests := []struct {
+		name       string
+		user       *user.User
+		apt        *Appointment
+		param      string
+		err        error
+		wantStatus int
+	}{
+		{name: "client_valid", user: client, apt: clientApt, param: "1", wantStatus: http.StatusOK},
+		{name: "provider_valid", user: provider, apt: clientApt, param: "1", wantStatus: http.StatusOK},
+		{name: "admin_valid", user: admin, apt: foreignApt, param: "2", wantStatus: http.StatusOK},
+		{name: "client_invalid_param", user: client, apt: clientApt, param: "abc", wantStatus: http.StatusBadRequest},
+		{name: "not_found", user: client, apt: clientApt, param: "100", err: ErrAppointmentNotFound, wantStatus: http.StatusNotFound},
+		{name: "client_access_denied", user: client, apt: foreignApt, param: "2", wantStatus: http.StatusNotFound},
+		{name: "provider_access_denied", user: provider, apt: foreignApt, param: "2", wantStatus: http.StatusNotFound},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := &mockStore{apt: tt.apt, err: tt.err}
+
+			h := NewHandler(store, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+			rec := httptest.NewRecorder()
+
+			req := httptest.NewRequest(http.MethodGet, "/v1/appointments", nil)
+			req.SetPathValue("id", tt.param)
+			req = user.SetUserContext(req, tt.user)
+
+			h.Show(rec, req)
+
+			assert.Equal(t, rec.Code, tt.wantStatus)
+
+			if tt.wantStatus == http.StatusOK {
+				actual, err := io.ReadAll(rec.Body)
+				assert.NilError(t, err)
+				actual = bytes.TrimSpace(actual)
+
+				expected, err := json.Marshal(&store.apt)
+				assert.NilError(t, err)
+				assert.Equal(t, string(actual), string(expected))
+			}
+		})
+	}
+}
