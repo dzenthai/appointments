@@ -71,6 +71,17 @@ func canTransition(from, to Status) bool {
 	return false
 }
 
+func (s *Store) GetAllByAdmin(ctx context.Context, f filters.Filters) ([]Appointment, error) {
+	query := fmt.Sprintf(
+		`SELECT id, client_id, provider_id, title, description, starts_at, ends_at, status, created_at, updated_at, version
+       	FROM appointments
+		ORDER BY %s %s
+		LIMIT $1 OFFSET $2`,
+		f.SortColumn(), f.SortDirection())
+
+	return s.queryAppointments(ctx, query, f)
+}
+
 func (s *Store) GetAllByClient(ctx context.Context, userID int64, f filters.Filters) ([]Appointment, error) {
 	query := fmt.Sprintf(
 		`SELECT id, client_id, provider_id, title, description, starts_at, ends_at, status, created_at, updated_at, version
@@ -80,7 +91,7 @@ func (s *Store) GetAllByClient(ctx context.Context, userID int64, f filters.Filt
 		LIMIT $2 OFFSET $3`,
 		f.SortColumn(), f.SortDirection())
 
-	return s.queryAppointments(ctx, query, userID, f)
+	return s.queryAppointments(ctx, query, f, userID)
 }
 
 func (s *Store) GetAllByProvider(ctx context.Context, userID int64, f filters.Filters) ([]Appointment, error) {
@@ -92,14 +103,14 @@ func (s *Store) GetAllByProvider(ctx context.Context, userID int64, f filters.Fi
 		LIMIT $2 OFFSET $3`,
 		f.SortColumn(), f.SortDirection())
 
-	return s.queryAppointments(ctx, query, userID, f)
+	return s.queryAppointments(ctx, query, f, userID)
 }
 
-func (s *Store) queryAppointments(ctx context.Context, query string, userID int64, f filters.Filters) ([]Appointment, error) {
+func (s *Store) queryAppointments(ctx context.Context, query string, f filters.Filters, ids ...any) ([]Appointment, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
-	args := []any{userID, f.Limit(), f.Offset()}
+	args := append(ids, f.Limit(), f.Offset())
 
 	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {

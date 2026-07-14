@@ -20,6 +20,7 @@ type Handler struct {
 }
 
 type appointmentStore interface {
+	GetAllByAdmin(ctx context.Context, f filters.Filters) ([]Appointment, error)
 	GetAllByClient(ctx context.Context, userID int64, f filters.Filters) ([]Appointment, error)
 	GetAllByProvider(ctx context.Context, userID int64, f filters.Filters) ([]Appointment, error)
 	GetByID(ctx context.Context, id int64) (*Appointment, error)
@@ -63,6 +64,8 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		apts, err = h.store.GetAllByClient(r.Context(), u.ID, fs)
 	case user.RoleProvider:
 		apts, err = h.store.GetAllByProvider(r.Context(), u.ID, fs)
+	case user.RoleAdmin:
+		apts, err = h.store.GetAllByAdmin(r.Context(), fs)
 	default:
 		jsonutil.NotFoundResponse(w)
 		return
