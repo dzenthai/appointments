@@ -10,83 +10,23 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 )
 
 func TestConfirm(t *testing.T) {
 
-	client := &user.User{
-		ID:         101,
-		FirstName:  "New",
-		SecondName: "Client",
-		Email:      "client@test.com",
-		Role:       user.RoleClient,
-		Verified:   true,
-		CreatedAt:  time.Now(),
-		Version:    1,
-	}
+	client := newUser(1, user.RoleClient)
 
-	provider := &user.User{
-		ID:         200,
-		FirstName:  "New",
-		SecondName: "Provider",
-		Email:      "provider@test.com",
-		Role:       user.RoleProvider,
-		Verified:   true,
-		CreatedAt:  time.Now(),
-		Version:    1,
-	}
+	provider := newUser(200, user.RoleProvider)
 
-	foreignProvider := &user.User{
-		ID:         201,
-		FirstName:  "Foreign",
-		SecondName: "Provider",
-		Email:      "foreign@test.com",
-		Role:       user.RoleProvider,
-		Verified:   true,
-		CreatedAt:  time.Now(),
-		Version:    1,
-	}
+	foreignProvider := newUser(201, user.RoleProvider)
 
-	apt := &Appointment{
-		ID:          1,
-		ClientID:    100,
-		ProviderID:  200,
-		Title:       "first appointment",
-		Description: "description",
-		Status:      StatusScheduled,
-		Version:     1,
-	}
+	apt := newApt(1, 100, 200, StatusScheduled)
 
-	cancelledApt := &Appointment{
-		ID:          1,
-		ClientID:    100,
-		ProviderID:  200,
-		Title:       "cancelled",
-		Description: "description",
-		Status:      StatusCancelled,
-		Version:     1,
-	}
+	cancelledApt := newApt(1, 100, 200, StatusCancelled)
 
-	confirmedApt := &Appointment{
-		ID:          1,
-		ClientID:    100,
-		ProviderID:  200,
-		Title:       "confirmed",
-		Description: "description",
-		Status:      StatusConfirmed,
-		Version:     1,
-	}
+	confirmedApt := newApt(2, 100, 200, StatusConfirmed)
 
-	completedApt := &Appointment{
-		ID:          1,
-		ClientID:    100,
-		ProviderID:  200,
-		Title:       "completed",
-		Description: "description",
-		Status:      StatusCompleted,
-		Version:     1,
-	}
+	completedApt := newApt(3, 100, 200, StatusCompleted)
 
 	tests := []struct {
 		name       string

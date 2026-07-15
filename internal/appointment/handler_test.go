@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 )
 
 type mockStore struct {
@@ -53,67 +52,15 @@ func (s *mockStore) Update(ctx context.Context, apt *Appointment) error {
 
 func TestList(t *testing.T) {
 
-	client := &user.User{
-		ID:         100,
-		FirstName:  "New",
-		SecondName: "Client",
-		Email:      "client@test.com",
-		Role:       user.RoleClient,
-		Verified:   true,
-		CreatedAt:  time.Now(),
-		Version:    1,
-	}
+	client := newUser(100, user.RoleClient)
 
-	provider := &user.User{
-		ID:         200,
-		FirstName:  "New",
-		SecondName: "Provider",
-		Email:      "provider@test.com",
-		Role:       user.RoleProvider,
-		Verified:   true,
-		CreatedAt:  time.Now(),
-		Version:    1,
-	}
+	provider := newUser(200, user.RoleProvider)
 
-	admin := &user.User{
-		ID:         1,
-		FirstName:  "New",
-		SecondName: "Admin",
-		Email:      "admin@test.com",
-		Role:       user.RoleAdmin,
-		Verified:   true,
-		CreatedAt:  time.Now(),
-		Version:    1,
-	}
+	admin := newUser(1, user.RoleAdmin)
 
 	anonymous := user.AnonymousUser
 
-	apts := []Appointment{
-		{
-			ClientID:   100,
-			ProviderID: 200,
-		},
-		{
-			ClientID:   100,
-			ProviderID: 201,
-		},
-		{
-			ClientID:   100,
-			ProviderID: 202,
-		},
-		{
-			ClientID:   101,
-			ProviderID: 200,
-		},
-		{
-			ClientID:   102,
-			ProviderID: 200,
-		},
-		{
-			ClientID:   103,
-			ProviderID: 200,
-		},
-	}
+	apts := getApts()
 
 	tests := []struct {
 		name       string
@@ -168,58 +115,15 @@ func TestList(t *testing.T) {
 
 func TestShow(t *testing.T) {
 
-	client := &user.User{
-		ID:         100,
-		FirstName:  "New",
-		SecondName: "User",
-		Email:      "user@test.com",
-		Role:       user.RoleClient,
-		Verified:   true,
-		CreatedAt:  time.Now(),
-		Version:    1,
-	}
+	client := newUser(100, user.RoleClient)
 
-	provider := &user.User{
-		ID:         200,
-		FirstName:  "New",
-		SecondName: "Provider",
-		Email:      "provider@test.com",
-		Role:       user.RoleProvider,
-		Verified:   true,
-		CreatedAt:  time.Now(),
-		Version:    1,
-	}
+	provider := newUser(200, user.RoleProvider)
 
-	admin := &user.User{
-		ID:         1,
-		FirstName:  "New",
-		SecondName: "Admin",
-		Email:      "admin@test.com",
-		Role:       user.RoleAdmin,
-		Verified:   true,
-		CreatedAt:  time.Now(),
-		Version:    1,
-	}
+	admin := newUser(1, user.RoleAdmin)
 
-	clientApt := &Appointment{
-		ID:          1,
-		ClientID:    100,
-		ProviderID:  200,
-		Title:       "first appointment",
-		Description: "description",
-		Status:      StatusScheduled,
-		Version:     1,
-	}
+	clientApt := newApt(1, 100, 200, StatusScheduled)
 
-	foreignApt := &Appointment{
-		ID:          2,
-		ClientID:    101,
-		ProviderID:  202,
-		Title:       "second appointment",
-		Description: "description",
-		Status:      StatusConfirmed,
-		Version:     1,
-	}
+	foreignApt := newApt(2, 101, 202, StatusConfirmed)
 
 	tests := []struct {
 		name       string
@@ -264,5 +168,50 @@ func TestShow(t *testing.T) {
 				assert.Equal(t, string(actual), string(expected))
 			}
 		})
+	}
+}
+
+func newUser(userID int64, role user.Role) *user.User {
+	return &user.User{
+		ID:   userID,
+		Role: role,
+	}
+}
+
+func newApt(aptID, clientID, providerID int64, status Status) *Appointment {
+	return &Appointment{
+		ID:         aptID,
+		ClientID:   clientID,
+		ProviderID: providerID,
+		Status:     status,
+	}
+}
+
+func getApts() []Appointment {
+	return []Appointment{
+		{
+			ClientID:   100,
+			ProviderID: 200,
+		},
+		{
+			ClientID:   100,
+			ProviderID: 201,
+		},
+		{
+			ClientID:   100,
+			ProviderID: 202,
+		},
+		{
+			ClientID:   101,
+			ProviderID: 200,
+		},
+		{
+			ClientID:   102,
+			ProviderID: 200,
+		},
+		{
+			ClientID:   103,
+			ProviderID: 200,
+		},
 	}
 }
