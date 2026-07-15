@@ -17,37 +17,38 @@ import (
 )
 
 type mockStore struct {
-	apt  *Appointment
-	apts []Appointment
-	role user.Role
-	err  error
+	apt       *Appointment
+	apts      []Appointment
+	role      user.Role
+	getErr    error
+	updateErr error
 }
 
 func (s *mockStore) GetAllByAdmin(ctx context.Context, f filters.Filters) ([]Appointment, error) {
 	s.role = user.RoleAdmin
-	return s.apts, s.err
+	return s.apts, s.getErr
 }
 
 func (s *mockStore) GetAllByClient(ctx context.Context, userID int64, f filters.Filters) ([]Appointment, error) {
 	s.role = user.RoleClient
-	return s.apts, s.err
+	return s.apts, s.getErr
 }
 
 func (s *mockStore) GetAllByProvider(ctx context.Context, userID int64, f filters.Filters) ([]Appointment, error) {
 	s.role = user.RoleProvider
-	return s.apts, s.err
+	return s.apts, s.getErr
 }
 
 func (s *mockStore) GetByID(ctx context.Context, id int64) (*Appointment, error) {
-	return s.apt, s.err
+	return s.apt, s.getErr
 }
 
 func (s *mockStore) Insert(ctx context.Context, apt *Appointment) error {
-	return s.err
+	return s.getErr
 }
 
 func (s *mockStore) Update(ctx context.Context, apt *Appointment) error {
-	return s.err
+	return s.updateErr
 }
 
 func TestList(t *testing.T) {
@@ -136,15 +137,15 @@ func TestList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			store := &mockStore{
-				apts: tt.apts,
-				err:  tt.err,
+				apts:   tt.apts,
+				getErr: tt.err,
 			}
 
 			h := NewHandler(store, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 
 			rec := httptest.NewRecorder()
 
-			req := httptest.NewRequest(http.MethodGet, "/v1/appointments"+tt.query, nil)
+			req := httptest.NewRequest(http.MethodGet, "/"+tt.query, nil)
 			req = user.SetUserContext(req, tt.user)
 
 			h.List(rec, req)
@@ -239,13 +240,13 @@ func TestShow(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			store := &mockStore{apt: tt.apt, err: tt.err}
+			store := &mockStore{apt: tt.apt, getErr: tt.err}
 
 			h := NewHandler(store, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 
 			rec := httptest.NewRecorder()
 
-			req := httptest.NewRequest(http.MethodGet, "/v1/appointments", nil)
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			req.SetPathValue("id", tt.param)
 			req = user.SetUserContext(req, tt.user)
 
