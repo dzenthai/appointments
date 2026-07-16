@@ -12,11 +12,11 @@ import (
 	"testing"
 )
 
-func TestConfirm(t *testing.T) {
+func TestCancel(t *testing.T) {
+
+	client := newUser(100, user.RoleClient)
 
 	foreignClient := newUser(101, user.RoleClient)
-
-	provider := newUser(200, user.RoleProvider)
 
 	foreignProvider := newUser(201, user.RoleProvider)
 
@@ -37,15 +37,15 @@ func TestConfirm(t *testing.T) {
 		updateErr  error
 		wantStatus int
 	}{
-		{name: "valid_confirmation", user: provider, apt: apt, param: "1", wantStatus: http.StatusOK},
-		{name: "not_found", user: provider, apt: apt, param: "2", getErr: ErrAppointmentNotFound, wantStatus: http.StatusNotFound},
-		{name: "invalid_param", user: provider, apt: apt, param: "abc", wantStatus: http.StatusBadRequest},
+		{name: "valid_cancellation", user: client, apt: apt, param: "1", wantStatus: http.StatusOK},
+		{name: "not_found", user: client, apt: apt, param: "2", getErr: ErrAppointmentNotFound, wantStatus: http.StatusNotFound},
+		{name: "invalid_param", user: client, apt: apt, param: "abc", wantStatus: http.StatusBadRequest},
 		{name: "foreign_provider_access_denied", user: foreignProvider, apt: apt, param: "1", wantStatus: http.StatusNotFound},
 		{name: "client_access_denied", user: foreignClient, apt: apt, param: "1", wantStatus: http.StatusNotFound},
-		{name: "edit_conflict", user: provider, apt: apt, param: "1", updateErr: ErrEditConflict, wantStatus: http.StatusConflict},
-		{name: "cancel_transition", user: provider, apt: cancelledApt, param: "1", wantStatus: http.StatusBadRequest},
-		{name: "confirmed_transition", user: provider, apt: confirmedApt, param: "2", wantStatus: http.StatusBadRequest},
-		{name: "completed_transition", user: provider, apt: completedApt, param: "3", wantStatus: http.StatusBadRequest},
+		{name: "edit_conflict", user: client, apt: apt, param: "1", updateErr: ErrEditConflict, wantStatus: http.StatusConflict},
+		{name: "cancel_transition", user: client, apt: cancelledApt, param: "1", wantStatus: http.StatusBadRequest},
+		{name: "confirmed_transition", user: client, apt: confirmedApt, param: "2", wantStatus: http.StatusBadRequest},
+		{name: "completed_transition", user: client, apt: completedApt, param: "3", wantStatus: http.StatusBadRequest},
 	}
 
 	for _, tt := range tests {

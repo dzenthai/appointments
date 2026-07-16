@@ -8,11 +8,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 type mockStore struct {
@@ -60,7 +62,7 @@ func TestList(t *testing.T) {
 
 	anonymous := user.AnonymousUser
 
-	apts := getApts()
+	apts := newApts()
 
 	tests := []struct {
 		name       string
@@ -173,21 +175,32 @@ func TestShow(t *testing.T) {
 
 func newUser(userID int64, role user.Role) *user.User {
 	return &user.User{
-		ID:   userID,
-		Role: role,
+		ID:         userID,
+		FirstName:  "first name",
+		SecondName: "second name",
+		Email:      fmt.Sprintf("%s@test.com", role),
+		Role:       role,
+		Verified:   true,
+		CreatedAt:  time.Time{},
+		Version:    1,
 	}
 }
 
 func newApt(aptID, clientID, providerID int64, status Status) *Appointment {
+	now := time.Now()
 	return &Appointment{
 		ID:         aptID,
 		ClientID:   clientID,
 		ProviderID: providerID,
+		Title:      "title",
+		StartsAt:   now.Add(time.Hour),
+		EndsAt:     now.Add(2 * time.Hour),
 		Status:     status,
+		Version:    1,
 	}
 }
 
-func getApts() []Appointment {
+func newApts() []Appointment {
 	return []Appointment{
 		{
 			ClientID:   100,
