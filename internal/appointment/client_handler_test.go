@@ -5,6 +5,7 @@ import (
 	"appointments/internal/user"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -68,6 +69,8 @@ func TestCreate(t *testing.T) {
 		{name: "non_client_creates", ctxUser: admin, storeUser: provider, body: validBody, wantStatus: http.StatusBadRequest},
 		{name: "provider_not_found", ctxUser: client, body: validBody, getUserErr: user.ErrUserNotFound, wantStatus: http.StatusBadRequest},
 		{name: "provider_wrong_role", ctxUser: client, storeUser: wrongProvider, body: validBody, wantStatus: http.StatusBadRequest},
+		{name: "insert_error", ctxUser: client, storeUser: provider, body: validBody, createAptErr: errors.New("server error"),
+			wantStatus: http.StatusInternalServerError},
 	}
 
 	for _, tt := range tests {
