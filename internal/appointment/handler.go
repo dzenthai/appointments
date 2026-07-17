@@ -15,7 +15,7 @@ import (
 
 type Handler struct {
 	store     appointmentStore
-	userStore user.UserStore
+	userStore userStore
 	logger    *slog.Logger
 }
 
@@ -28,7 +28,11 @@ type appointmentStore interface {
 	Update(ctx context.Context, apt *Appointment) error
 }
 
-func NewHandler(store appointmentStore, userStore user.UserStore, logger *slog.Logger) *Handler {
+type userStore interface {
+	GetByID(ctx context.Context, id int64) (*user.User, error)
+}
+
+func NewHandler(store appointmentStore, userStore userStore, logger *slog.Logger) *Handler {
 	return &Handler{
 		store:     store,
 		userStore: userStore,

@@ -15,7 +15,7 @@ import (
 )
 
 type Handler struct {
-	store        UserStore
+	store        userStore
 	token        *token.Store
 	logger       *slog.Logger
 	wg           *sync.WaitGroup
@@ -24,7 +24,7 @@ type Handler struct {
 	authTokenTTL time.Duration
 }
 
-type UserStore interface {
+type userStore interface {
 	GetByToken(ctx context.Context, plaintext string, scope token.Scope) (*User, error)
 	GetByID(ctx context.Context, id int64) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
@@ -33,7 +33,7 @@ type UserStore interface {
 }
 
 func NewHandler(
-	store UserStore,
+	store userStore,
 	token *token.Store,
 	logger *slog.Logger,
 	wg *sync.WaitGroup,
