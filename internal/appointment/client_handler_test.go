@@ -5,12 +5,104 @@ import (
 	"appointments/internal/user"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 )
+
+func TestCreate(t *testing.T) {
+	client := newUser(100, user.RoleClient)
+
+	provider := newUser(200, user.RoleProvider)
+
+	wrongProvider := newUser(201, user.RoleClient)
+
+	admin := newUser(1, user.RoleAdmin)
+
+	validBody := fmt.Sprintf(`{
+    	"provider_id": 200,
+    	"title": "title",
+    	"description": "description",
+    	"starts_at": %q,
+    	"ends_at": %q
+	}`,
+		time.Now().Add(time.Hour).Format(time.RFC3339),
+		time.Now().Add(2*time.Hour).Format(time.RFC3339),
+	)
+
+	invalidBody := fmt.Sprintf(`{
+    	"provider_id": 200,
+    	"title": "title",
+    	"description": "description",
+    	"starts_at": %q,
+    	"ends_at": %q
+	}`,
+		time.Date(1999, time.January, 1, 12, 0, 0, 0, time.UTC).Format(time.RFC3339),
+		time.Date(1990, time.January, 1, 12, 0, 0, 0, time.UTC).Format(time.RFC3339),
+	)
+
+	malformedBody := `{
+    	"provider_id": 200,
+    	"title": "Example title",
+    	"description": "Example description",
+    	"starts_at": %q,
+    	"ends_at`
+
+	tests := []struct {
+		name         string
+		ctxUser      *user.User
+		storeUser    *user.User
+		body         string
+		getUserErr   error
+		createAptErr error
+		wantStatus   int
+	}{
+		{name: "valid_json_body", ctxUser: client, storeUser: provider, body: validBody, wantStatus: http.StatusCreated},
+		{name: "invalid_json_body", ctxUser: client, storeUser: provider, body: invalidBody, wantStatus: http.StatusBadRequest},
+		{name: "malformed_json_body", ctxUser: client, storeUser: provider, body: malformedBody, wantStatus: http.StatusBadRequest},
+		{name: "non_client_creates", ctxUser: admin, storeUser: provider, body: validBody, wantStatus: http.StatusBadRequest},
+		{name: "provider_not_found", ctxUser: client, body: validBody, getUserErr: user.ErrUserNotFound, wantStatus: http.StatusBadRequest},
+		{name: "provider_wrong_role", ctxUser: client, storeUser: wrongProvider, body: validBody, wantStatus: http.StatusBadRequest},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			aptStore := &storeMock{
+				createErr: tt.createAptErr,
+			}
+
+			userStore := &userStoreMock{
+				user:   tt.storeUser,
+				getErr: tt.getUserErr,
+			}
+
+			h := NewHandler(aptStore, userStore, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+			rec := httptest.NewRecorder()
+
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.body))
+			req = user.SetUserContext(req, tt.ctxUser)
+
+			h.Create(rec, req)
+
+			assert.Equal(t, rec.Code, tt.wantStatus)
+
+			if tt.wantStatus == http.StatusCreated {
+				var got Appointment
+				assert.NilError(t, json.NewDecoder(rec.Body).Decode(&got))
+
+				assert.Equal(t, got.ClientID, tt.ctxUser.ID)
+				assert.Equal(t, got.ProviderID, tt.storeUser.ID)
+				assert.Equal(t, got.Status, StatusScheduled)
+			}
+		})
+	}
+}
 
 func TestCancel(t *testing.T) {
 
@@ -50,7 +142,7 @@ func TestCancel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			store := &mockStore{
+			store := &storeMock{
 				apt:       new(*tt.apt),
 				getErr:    tt.getErr,
 				updateErr: tt.updateErr,

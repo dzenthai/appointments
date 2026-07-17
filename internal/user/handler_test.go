@@ -1,7 +1,9 @@
 package user
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestRegister(t *testing.T) {
-	
+
 }

@@ -50,7 +50,7 @@ func TestConfirm(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			store := &mockStore{
+			store := &storeMock{
 				apt:       new(*tt.apt),
 				getErr:    tt.getErr,
 				updateErr: tt.updateErr,
