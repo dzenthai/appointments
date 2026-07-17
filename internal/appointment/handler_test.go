@@ -29,20 +29,20 @@ func TestList(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		user       *user.User
+		ctxUser    *user.User
 		apts       []Appointment
 		query      string
 		err        error
 		wantStatus int
 		wantStore  user.Role
 	}{
-		{name: "client_list", user: client, apts: apts, wantStatus: http.StatusOK, wantStore: user.RoleClient},
-		{name: "provider_list", user: provider, apts: apts, wantStatus: http.StatusOK, wantStore: user.RoleProvider},
-		{name: "admin_list", user: admin, apts: apts, wantStatus: http.StatusOK, wantStore: user.RoleAdmin},
-		{name: "anonymous_list", user: anonymous, apts: apts, wantStatus: http.StatusNotFound},
-		{name: "valid_query", user: client, apts: apts, query: "?sort=title&page=2&page_size=10", wantStatus: http.StatusOK, wantStore: user.RoleClient},
-		{name: "invalid_query", user: client, query: "?title=id&page=-1&page_size=-20", wantStatus: http.StatusBadRequest, wantStore: ""},
-		{name: "store_error", user: client, err: errors.New("mock error"), wantStatus: http.StatusInternalServerError, wantStore: user.RoleClient},
+		{name: "client_list", ctxUser: client, apts: apts, wantStatus: http.StatusOK, wantStore: user.RoleClient},
+		{name: "provider_list", ctxUser: provider, apts: apts, wantStatus: http.StatusOK, wantStore: user.RoleProvider},
+		{name: "admin_list", ctxUser: admin, apts: apts, wantStatus: http.StatusOK, wantStore: user.RoleAdmin},
+		{name: "anonymous_list", ctxUser: anonymous, apts: apts, wantStatus: http.StatusNotFound},
+		{name: "valid_query", ctxUser: client, apts: apts, query: "?sort=title&page=2&page_size=10", wantStatus: http.StatusOK, wantStore: user.RoleClient},
+		{name: "invalid_query", ctxUser: client, query: "?title=id&page=-1&page_size=-20", wantStatus: http.StatusBadRequest, wantStore: ""},
+		{name: "store_error", ctxUser: client, err: errors.New("mock error"), wantStatus: http.StatusInternalServerError, wantStore: user.RoleClient},
 	}
 
 	for _, tt := range tests {
@@ -58,7 +58,7 @@ func TestList(t *testing.T) {
 			rec := httptest.NewRecorder()
 
 			req := httptest.NewRequest(http.MethodGet, "/"+tt.query, nil)
-			req = user.SetUserContext(req, tt.user)
+			req = user.SetUserContext(req, tt.ctxUser)
 
 			h.List(rec, req)
 
@@ -92,19 +92,19 @@ func TestShow(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		user       *user.User
+		ctxUser    *user.User
 		apt        *Appointment
 		param      string
 		err        error
 		wantStatus int
 	}{
-		{name: "client_valid", user: client, apt: clientApt, param: "1", wantStatus: http.StatusOK},
-		{name: "provider_valid", user: provider, apt: clientApt, param: "1", wantStatus: http.StatusOK},
-		{name: "admin_valid", user: admin, apt: foreignApt, param: "2", wantStatus: http.StatusOK},
-		{name: "client_invalid_param", user: client, apt: clientApt, param: "abc", wantStatus: http.StatusBadRequest},
-		{name: "not_found", user: client, apt: clientApt, param: "100", err: ErrAppointmentNotFound, wantStatus: http.StatusNotFound},
-		{name: "client_access_denied", user: client, apt: foreignApt, param: "2", wantStatus: http.StatusNotFound},
-		{name: "provider_access_denied", user: provider, apt: foreignApt, param: "2", wantStatus: http.StatusNotFound},
+		{name: "client_valid", ctxUser: client, apt: clientApt, param: "1", wantStatus: http.StatusOK},
+		{name: "provider_valid", ctxUser: provider, apt: clientApt, param: "1", wantStatus: http.StatusOK},
+		{name: "admin_valid", ctxUser: admin, apt: foreignApt, param: "2", wantStatus: http.StatusOK},
+		{name: "client_invalid_param", ctxUser: client, apt: clientApt, param: "abc", wantStatus: http.StatusBadRequest},
+		{name: "not_found", ctxUser: client, apt: clientApt, param: "100", err: ErrAppointmentNotFound, wantStatus: http.StatusNotFound},
+		{name: "client_access_denied", ctxUser: client, apt: foreignApt, param: "2", wantStatus: http.StatusNotFound},
+		{name: "provider_access_denied", ctxUser: provider, apt: foreignApt, param: "2", wantStatus: http.StatusNotFound},
 	}
 
 	for _, tt := range tests {
@@ -117,7 +117,7 @@ func TestShow(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			req.SetPathValue("id", tt.param)
-			req = user.SetUserContext(req, tt.user)
+			req = user.SetUserContext(req, tt.ctxUser)
 
 			h.Show(rec, req)
 
@@ -156,7 +156,7 @@ func newApt(aptID, clientID, providerID int64, status Status) *Appointment {
 		ClientID:   clientID,
 		ProviderID: providerID,
 		Title:      "title",
-		StartsAt:   now.Add(time.Hour),
+		StartsAt:   now.Add(1 * time.Hour),
 		EndsAt:     now.Add(2 * time.Hour),
 		Status:     status,
 		Version:    1,
