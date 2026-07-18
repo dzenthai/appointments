@@ -7,7 +7,7 @@ api/run:
 migrations/create:
 	migrate create -seq -ext .sql -dir ./migrations ${name}
 
-MIGRATION := migrate -path ./migrations -database ${DSN}
+MIGRATION := migrate -path ./migrations -database ${DB_DSN}
 
 .PHONY: migrations/up
 migrations/up:
