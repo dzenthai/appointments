@@ -7,6 +7,16 @@ api/run:
 migrations/create:
 	migrate create -seq -ext .sql -dir ./migrations ${name}
 
+MIGRATION := migrate -path ./migrations -database ${DSN}
+
 .PHONY: migrations/up
 migrations/up:
-	migrate -path ./migrations -database ${DSN} up
+	$(MIGRATION) up
+
+.PHONY: migrations/down
+migrations/down:
+	$(MIGRATION) down
+
+.PHONY: docker/run/db
+docker/run/db:
+	docker-compose up -d --build appointments-db
