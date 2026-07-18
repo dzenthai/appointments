@@ -1,7 +1,7 @@
 export PORT=4000
 export ENV='dev'
 
-export DB_DSN=postgres://dzenthai:pa55word@localhost:5432/appointments?sslmode=disable
+export DB_DSN=postgres://user:password@localhost:5432/appointments?sslmode=disable
 export DB_MAX_OPEN_CONNS=25
 export DB_MAX_IDLE_CONNS=25
 export DB_MAX_IDLE_TIME='15m'
