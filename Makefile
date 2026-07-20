@@ -1,22 +1,32 @@
-.PHONY: api/run
-api/run:
+.PHONY: run/api
+run/api: check-dsn
 	go run ./cmd/api
+
+.PHONY: tidy
+tidy:
+	@echo 'Formatting code...'
+	go fmt ./...
+	@echo 'Tidying module dependencies...'
+	go mod tidy -v
 
 .PHONY: audit
 audit:
-	@echo 'Tidying and verifying module dependencies...'
-	go mod tidy
+	@echo 'Checking module dependencies...'
+	go mod tidy -diff
 	go mod verify
-	@echo 'Formatting code...'
-	go fmt ./...
+	@echo 'Checking formatting...'
+	test -z "$(shell gofmt -l .)"
 	@echo 'Vetting code...'
 	go vet ./...
-	staticcheck ./...
+	go run honnef.co/go/tools/cmd/staticcheck@latest ./...
 	@echo 'Running tests...'
-	go test -race -vet=off ./...
+	go test -race -vet=off -count=1 ./...
+	@echo 'Building application...'
+	go build ./...
 
 MIGRATION := migrate -path ./migrations -database ${DB_DSN}
 
+.PHONY: check-dsn
 check-dsn:
 ifndef DB_DSN
 	$(error DB_DSN is not set; run 'direnv allow')
