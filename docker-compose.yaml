@@ -2,9 +2,21 @@ services:
   appointments-db:
     container_name: appointments-db
     image: postgres:latest
+    restart: on-failure
     environment:
       POSTGRES_USER: dzenthai
       POSTGRES_PASSWORD: pa55word
       POSTGRES_DB: appointments
     ports:
       - '5432:5432'
+
+  appointments-api:
+    container_name: appointments-api
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .envrc
+    ports:
+      - '4000:4000'
+    depends_on:
+      - appointments-db

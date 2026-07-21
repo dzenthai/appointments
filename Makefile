@@ -44,6 +44,6 @@ migrations/up: check-dsn
 migrations/down: check-dsn
 	$(MIGRATION) down
 
-.PHONY: docker/run/db
-docker/run/db:
+.PHONY: docker/compose/db
+docker/compose/db:
 	docker compose up -d appointments-db
