@@ -9,6 +9,25 @@ services:
       POSTGRES_DB: appointments
     ports:
       - '5432:5432'
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U dzenthai -d appointments" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  appointments-migrate:
+    container_name: appointments-migrate
+    image: migrate/migrate:latest
+    restart: on-failure
+    volumes:
+      - ./migrations:/migrations
+    command:
+      [ "-path", "/migrations", "-database", "${DB_DSN}", "up" ]
+    depends_on:
+      appointments-db:
+        condition: service_healthy
+
 
   appointments-api:
     container_name: appointments-api
@@ -18,5 +37,9 @@ services:
       - .envrc
     ports:
       - '4000:4000'
+    stop_grace_period: 30s
     depends_on:
-      - appointments-db
+      appointments-db:
+        condition: service_healthy
+      appointments-migrate:
+        condition: service_completed_successfully
