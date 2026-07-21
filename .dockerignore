@@ -1,0 +1,10 @@
+.git
+
+.idea
+
+.github
+
+.envrc
+.envrc.example
+
+Makefile
