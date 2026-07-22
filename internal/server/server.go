@@ -77,6 +77,8 @@ func (s *Server) Serve() error {
 
 		s.wg.Wait()
 
+		s.logger.Info("stopped server")
+
 		shutdownError <- nil
 	}()
 

@@ -35,8 +35,8 @@ func NewStore(db *sql.DB) *Store {
 
 func ValidateAuthToken(v *validator.Validator, plaintext string) {
 	v.Check(plaintext != "", "token", "must be provided")
-	v.Check(len(plaintext) >= 26, "token", "token must be at least 26 bytes long")
-	v.Check(len(plaintext) <= 52, "token", "token must be 52 bytes or less")
+	v.Check(len(plaintext) >= 26, "token", "token must be at least 26 long")
+	v.Check(len(plaintext) <= 52, "token", "token must be 52 or less")
 }
 
 func NewVerification(userID int64, ttl time.Duration) (*Token, error) {
