@@ -1,7 +1,7 @@
 services:
   appointments-db:
     container_name: appointments-db
-    image: postgres:latest
+    image: postgres:18.0
     restart: on-failure
     environment:
       POSTGRES_USER: dzenthai
@@ -18,8 +18,8 @@ services:
 
   appointments-migrate:
     container_name: appointments-migrate
-    image: migrate/migrate:latest
-    restart: on-failure
+    image: migrate/migrate:v4.19.1
+    restart: no
     volumes:
       - ./migrations:/migrations
     command:
