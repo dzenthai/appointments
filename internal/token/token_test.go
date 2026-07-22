@@ -14,10 +14,10 @@ func TestValidateToken(t *testing.T) {
 		plaintext  string
 		wantErrKey string
 	}{
-		{name: "valid_min_value", plaintext: strings.Repeat("A", 16)},
-		{name: "valid_max_value", plaintext: strings.Repeat("A", 32)},
+		{name: "valid_min_value", plaintext: strings.Repeat("A", 26)},
+		{name: "valid_max_value", plaintext: strings.Repeat("A", 52)},
 		{name: "empty_plaintext", plaintext: "", wantErrKey: "token"},
-		{name: "greater_max_value", plaintext: strings.Repeat("A", 33), wantErrKey: "token"},
+		{name: "greater_max_value", plaintext: strings.Repeat("A", 53), wantErrKey: "token"},
 	}
 
 	for _, tt := range tests {
