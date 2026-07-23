@@ -55,9 +55,9 @@ docker/compose/db:
 	$(COMPOSE_UP) appointments-db
 
 .PHONY: docker/compose/migrate
-docker/compose/db:
+docker/compose/migrate:
 	$(COMPOSE_UP) appointments-migrate
 
 .PHONY: docker/compose/api
-docker/compose/db:
+docker/compose/api:
 	$(COMPOSE_UP) appointments-api
